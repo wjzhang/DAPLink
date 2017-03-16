@@ -30,7 +30,7 @@ typedef struct{
 uint8_t nrf51_target_set_state(TARGET_RESET_STATE state);
 uint8_t stm32f051_target_set_state(TARGET_RESET_STATE state);
 uint8_t stm32f071_target_set_state(TARGET_RESET_STATE state);
-
+uint8_t stm32f031_target_set_state(TARGET_RESET_STATE state);
 
 void common_target_before_init_debug(void)
 {
@@ -49,7 +49,7 @@ uint8_t common_security_bits_set(uint32_t addr, uint8_t *data, uint32_t size)
 
 uint8_t common_target_set_state(TARGET_RESET_STATE state)
 {
-	if (gpio_get_config(PIN_CONFIG_DT01) == PIN_HIGH) {
+	if ((gpio_get_config(PIN_CONFIG_DT01) == PIN_HIGH) && (targetID != Target_UNKNOWN)){
         return swd_set_target_state_hw(state);
     } else {
         return swd_set_target_state_sw(state);        
@@ -63,6 +63,7 @@ static const Target_Reset targets[] = {
     {common_target_before_init_debug    , common_target_unlock_sequence    , common_security_bits_set, common_target_set_state       }, //STM32F103
     {common_target_before_init_debug    , common_target_unlock_sequence    , common_security_bits_set, common_target_set_state       }, //STM32F405
     {common_target_before_init_debug    , common_target_unlock_sequence    , common_security_bits_set, stm32f071_target_set_state    }, //STM32F071
+    {common_target_before_init_debug    , common_target_unlock_sequence    , common_security_bits_set, stm32f031_target_set_state    }, //STM32F031
 };
 
 

@@ -23,6 +23,7 @@ enum Target_IDs
     Target_STM32F103 = 2,
     Target_STM32F405 = 3,
     Target_STM32F071 = 4,    
+    Target_STM32F031 = 5,    
     
     Target_UNKNOWN   = 0xFF
 };
