@@ -32,20 +32,20 @@
     \defgroup USBD_CDC_ACM_GLOBAL_VAR  Global Variables (GLOBAL_VAR)
     \brief      Global variables used in USBD CDC ACM module
  */
-int32_t data_send_access;              /*!< Flag active while send data (in the send intermediate buffer) is being accessed */
-int32_t data_send_active;              /*!< Flag active while data is being sent */
-int32_t data_send_zlp;                 /*!< Flag active when ZLP needs to be sent */
-int32_t data_to_send_wr;               /*!< Number of bytes written to the send intermediate buffer */
-int32_t data_to_send_rd;               /*!< Number of bytes read from the send intermediate buffer */
-uint8_t *ptr_data_to_send;             /*!< Pointer to the send intermediate buffer to the data to be sent */
-uint8_t *ptr_data_sent;                /*!< Pointer to the send intermediate buffer to the data already sent */
+volatile int32_t data_send_access;              /*!< Flag active while send data (in the send intermediate buffer) is being accessed */
+volatile int32_t data_send_active;              /*!< Flag active while data is being sent */
+volatile int32_t data_send_zlp;                 /*!< Flag active when ZLP needs to be sent */
+volatile int32_t data_to_send_wr;               /*!< Number of bytes written to the send intermediate buffer */
+volatile int32_t data_to_send_rd;               /*!< Number of bytes read from the send intermediate buffer */
+volatile uint8_t *ptr_data_to_send;             /*!< Pointer to the send intermediate buffer to the data to be sent */
+volatile uint8_t *ptr_data_sent;                /*!< Pointer to the send intermediate buffer to the data already sent */
 
-int32_t data_read_access;              /*!< Flag active while read data (in the receive intermediate buffer) is being accessed */
-int32_t data_receive_int_access;       /*!< Flag active while read data (in the receive intermediate buffer) is being accessed from the IRQ function*/
-int32_t data_received_pending_pckts;   /*!< Number of packets received but not handled (pending) */
-int32_t data_no_space_for_receive;     /*!< Flag active while there is no more space for reception */
-uint8_t *ptr_data_received;            /*!< Pointer to the receive intermediate buffer to the received unread data */
-uint8_t *ptr_data_read;                /*!< Pointer to the receive intermediate buffer to the received read data */
+volatile int32_t data_read_access;              /*!< Flag active while read data (in the receive intermediate buffer) is being accessed */
+volatile int32_t data_receive_int_access;       /*!< Flag active while read data (in the receive intermediate buffer) is being accessed from the IRQ function*/
+volatile int32_t data_received_pending_pckts;   /*!< Number of packets received but not handled (pending) */
+volatile int32_t data_no_space_for_receive;     /*!< Flag active while there is no more space for reception */
+volatile uint8_t *ptr_data_received;            /*!< Pointer to the receive intermediate buffer to the received unread data */
+volatile uint8_t *ptr_data_read;                /*!< Pointer to the receive intermediate buffer to the received read data */
 
 uint16_t control_line_state;           /*!< Control line state settings bitmap (0. bit - DTR state, 1. bit - RTS state) */
 
@@ -307,7 +307,7 @@ int32_t USBD_CDC_ACM_DataSend(const uint8_t *buf, int32_t len)
             ((ptr_data_to_send + len) >= (USBD_CDC_ACM_SendBuf + usbd_cdc_acm_sendbuf_sz))) {
         /* If data wraps around end of buffer */
         len_before_wrap   = USBD_CDC_ACM_SendBuf + usbd_cdc_acm_sendbuf_sz - ptr_data_to_send;
-        memcpy(ptr_data_to_send, buf_loc, len_before_wrap); /* Copy data till end */
+        memcpy((void *)ptr_data_to_send, buf_loc, len_before_wrap); /* Copy data till end */
         buf_loc          += len_before_wrap;            /* Increment buf pointer  */
         len              -= len_before_wrap;            /* Decrement bytes to send*/
         ptr_data_to_send  = USBD_CDC_ACM_SendBuf;       /* Wrap send buffer
@@ -316,7 +316,7 @@ int32_t USBD_CDC_ACM_DataSend(const uint8_t *buf, int32_t len)
     }
 
     if (len) {                            /* If there are bytes to send         */
-        memcpy(ptr_data_to_send, buf_loc, len);   /* Copy data to send buffer     */
+        memcpy((void *)ptr_data_to_send, buf_loc, len);   /* Copy data to send buffer     */
         ptr_data_to_send += len;            /* Correct position of write pointer  */
     }
 
@@ -368,7 +368,7 @@ int32_t USBD_CDC_ACM_DataRead(uint8_t *buf, int32_t len)
             len = len_data;    /* correct to return maximum available*/
         }
 
-        memcpy(buf, ptr_data_read, len);    /* Copy received data to provided buf */
+        memcpy(buf, (const void *)ptr_data_read, len);    /* Copy received data to provided buf */
         ptr_data_read      += len;          /* Correct position of read pointer   */
     } else {
         len = 0;                            /* No data received                   */
@@ -556,7 +556,7 @@ static void USBD_CDC_ACM_EP_BULKOUT_HandleData()
         /* If there is space for 1 max packet */
         /* Read received packet to receive buf*/
         len_free_to_recv = usbd_cdc_acm_receivebuf_sz - (ptr_data_received - USBD_CDC_ACM_ReceiveBuf);
-        len_received       = USBD_ReadEP(usbd_cdc_acm_ep_bulkout, ptr_data_received, len_free_to_recv);
+        len_received       = USBD_ReadEP(usbd_cdc_acm_ep_bulkout, (U8 *)ptr_data_received, len_free_to_recv);
         ptr_data_received += len_received;  /* Correct pointer to received data   */
 
         if (data_received_pending_pckts &&  /* If packet was pending              */
@@ -627,7 +627,7 @@ static void USBD_CDC_ACM_EP_BULKIN_HandleData(void)
 
     data_send_zlp = 0;
     /* Send data                          */
-    len_sent = USBD_WriteEP(usbd_cdc_acm_ep_bulkin | 0x80, ptr_data_sent, len_to_send);
+    len_sent = USBD_WriteEP(usbd_cdc_acm_ep_bulkin | 0x80, (U8 *)ptr_data_sent, len_to_send);
     ptr_data_sent    += len_sent;         /* Correct position of sent pointer   */
     data_to_send_rd  += len_sent;         /* Correct num of bytes left to send  */
 
