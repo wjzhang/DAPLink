@@ -838,7 +838,19 @@ static uint8_t get_target_id(uint32_t coreid)
      //check IDCODE:
     if(coreid == 0x2BA01477){
         //cortex-M4
-        rc = Target_STM32F405;
+        //check 0xE0042000
+        if(!swd_read_word(0xE0042000, &tmp)){
+            rc = Target_UNKNOWN;
+        }else{
+            tmp &= 0x00000FFF; //device ID has 12 bits
+            if(tmp == 0x00000413){
+                rc = Target_STM32F405;
+            }else if (tmp == 0x00000415){
+                rc = Target_STM32L486;
+            }else{
+                rc = Target_UNKNOWN;
+            }
+        }
     }else if(coreid == 0x1BA01477){
         //cortex-M3
         rc = Target_STM32F103;
