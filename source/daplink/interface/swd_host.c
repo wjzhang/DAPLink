@@ -585,12 +585,6 @@ static uint8_t swd_write_debug_state(DEBUG_STATE *state)
         return 0;
     }
 
-    if (!swd_write_memory(target_device[targetID].flash_algo->algo_start,
-                          (uint8_t *)target_device[targetID].flash_algo->algo_blob,
-                          target_device[targetID].flash_algo->algo_size)) {
-        return 0;
-    }
-
     if (!swd_write_word(DBG_HCSR, DBGKEY | C_DEBUGEN)) {
         return 0;
     }
@@ -694,7 +688,7 @@ uint8_t swd_flash_syscall_exec(const program_syscall_t *sysCallParam, uint32_t e
     state.r[14]    = sysCallParam->breakpoint;     // LR: Exit Point
     state.r[15]    = entry;                        // PC: Entry Point
     state.xpsr     = 0x01000000;          // xPSR: T = 1, ISR = 0
-
+   
     if (!swd_write_debug_state(&state)) {
         return 0;
     }
@@ -838,7 +832,19 @@ static uint8_t get_target_id(uint32_t coreid)
      //check IDCODE:
     if(coreid == 0x2BA01477){
         //cortex-M4
-        rc = Target_STM32F405;
+        //check 0xE0042000
+        if(!swd_read_word(0xE0042000, &tmp)){
+            rc = Target_UNKNOWN;
+        }else{
+            tmp &= 0x00000FFF; //device ID has 12 bits
+            if(tmp == 0x00000413){
+                rc = Target_STM32F405;
+            }else if (tmp == 0x00000415){
+                rc = Target_STM32L486;
+            }else{
+                rc = Target_UNKNOWN;
+            }
+        }
     }else if(coreid == 0x1BA01477){
         //cortex-M3
         rc = Target_STM32F103;
@@ -925,18 +931,30 @@ uint8_t swd_init_get_target(void)
         }
     } while ((tmp & (CDBGPWRUPACK | CSYSPWRUPACK)) != (CDBGPWRUPACK | CSYSPWRUPACK));
 
+            
     // need halt MCU for read right data from Peripher address space when power on
     // Enable debug and halt the core (DHCSR <- 0xA05F0003)
     if (!swd_write_word(DBG_HCSR, DBGKEY | C_DEBUGEN | C_HALT)) {
         return 0;
     }
+    
+    // Enable halt on reset
+    if (!swd_write_word(DBG_EMCR, VC_CORERESET)) {
+        return 0;
+    }    
 
     // Wait until core is halted
     do {
         if (!swd_read_word(DBG_HCSR, &tmp)) {
             return 0;
         }
-    } while ((tmp & S_HALT) == 0);    
+    } while ((tmp & S_HALT) == 0);
+    
+    // Disable halt on reset
+    if (!swd_write_word(DBG_EMCR, 0)) {
+        return 0;
+    }    
+    
     
     // core ID -> target ID    
     return get_target_id(tmpid);
@@ -1050,6 +1068,7 @@ uint8_t swd_set_target_state_hw(TARGET_RESET_STATE state)
                 }
             } while ((val & S_HALT) == 0);
 
+           
             // Disable halt on reset
             if (!swd_write_word(DBG_EMCR, 0)) {
                 return 0;
