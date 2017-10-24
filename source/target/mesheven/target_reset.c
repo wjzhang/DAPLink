@@ -31,6 +31,7 @@ uint8_t nrf51_target_set_state(TARGET_RESET_STATE state);
 uint8_t stm32f051_target_set_state(TARGET_RESET_STATE state);
 uint8_t stm32f071_target_set_state(TARGET_RESET_STATE state);
 uint8_t stm32f031_target_set_state(TARGET_RESET_STATE state);
+uint8_t nrf52_target_set_state(TARGET_RESET_STATE state);
 
 void common_target_before_init_debug(void)
 {
@@ -65,6 +66,7 @@ static const Target_Reset targets[] = {
     {common_target_before_init_debug    , common_target_unlock_sequence    , common_security_bits_set, stm32f071_target_set_state    }, //STM32F071
     {common_target_before_init_debug    , common_target_unlock_sequence    , common_security_bits_set, stm32f031_target_set_state    }, //STM32F031
     {common_target_before_init_debug    , common_target_unlock_sequence    , common_security_bits_set, common_target_set_state       }, //STM32L486
+    {common_target_before_init_debug    , common_target_unlock_sequence    , common_security_bits_set, nrf52_target_set_state        }, //nRF52
 };
 
 
