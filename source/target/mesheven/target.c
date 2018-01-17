@@ -30,6 +30,8 @@ extern const program_target_t stm32f071_flash;
 extern const program_target_t stm32f103_flash;
 extern const program_target_t stm32f405_flash;
 extern const program_target_t stm32f031_flash;
+extern const program_target_t stm32l486_flash;
+extern const program_target_t NRF52_flash;
     
 uint32_t nrf51_GetSecNum (uint32_t addr);
 uint32_t nrf51_GetSecAddress(uint32_t sector);
@@ -54,6 +56,14 @@ uint32_t stm32f405_GetSecLength (uint32_t sector);
 uint32_t stm32f031_GetSecNum (uint32_t addr);
 uint32_t stm32f031_GetSecAddress(uint32_t sector);
 uint32_t stm32f031_GetSecLength(uint32_t sector);
+
+uint32_t stm32l486_GetSecNum (uint32_t addr);
+uint32_t stm32l486_GetSecAddress (uint32_t sector);
+uint32_t stm32l486_GetSecLength (uint32_t sector);
+
+uint32_t nrf52_GetSecNum (uint32_t addr);
+uint32_t nrf52_GetSecAddress(uint32_t sector);
+uint32_t nrf52_GetSecLength(uint32_t sector);
 
 // target information
 const target_cfg_t target_device[] = 
@@ -135,6 +145,31 @@ const target_cfg_t target_device[] =
         .get_sector_number = stm32f031_GetSecNum,
         .get_sector_address = stm32f031_GetSecAddress,
         .get_sector_length = stm32f031_GetSecLength,        
-    }    
-    
+    },    
+    //stm32l486
+    {
+        .sector_size    = 2048,
+        .sector_cnt     = 512,
+        .flash_start    = 0x08000000,
+        .flash_end      = 0x08100000,
+        .ram_start      = 0x20000000,
+        .ram_end        = 0x20020000,
+        .flash_algo     = (program_target_t *) &stm32l486_flash,
+        .get_sector_number = stm32l486_GetSecNum,
+        .get_sector_address = stm32l486_GetSecAddress,
+        .get_sector_length = stm32l486_GetSecLength,        
+    },
+    //nrf52832
+    {
+        .sector_size    = 4096,
+        .sector_cnt     = 512,
+        .flash_start    = 0x00000000,
+        .flash_end      = 0x10001100,
+        .ram_start      = 0x20000000,
+        .ram_end        = 0x20010000,
+        .flash_algo     = (program_target_t *) &NRF52_flash,
+        .get_sector_number = nrf52_GetSecNum,
+        .get_sector_address = nrf52_GetSecAddress,
+        .get_sector_length = nrf52_GetSecLength,
+    },    
 };
