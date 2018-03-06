@@ -96,6 +96,7 @@ void reset_hex_parser(void)
 
 hexfile_parse_status_t parse_hex_blob(const uint8_t *hex_blob, const uint32_t hex_blob_size, uint32_t *hex_parse_cnt, uint8_t *bin_buf, const uint32_t bin_buf_size, uint32_t *bin_buf_address, uint32_t *bin_buf_cnt)
 {
+    uint32_t skipsize = 0;
     uint8_t *end = (uint8_t *)hex_blob + hex_blob_size;
     hexfile_parse_status_t status = HEX_PARSE_UNINIT;
     // reset the amount of data that is being return'd
@@ -137,9 +138,22 @@ hexfile_parse_status_t parse_hex_blob(const uint8_t *hex_blob, const uint32_t he
 
                                 // verify this is a continous block of memory or need to exit and dump
                                 if (((next_address_to_write & 0xffff0000) | line.address) != next_address_to_write) {
-                                    load_unaligned_record = 1;
-                                    status = HEX_PARSE_UNALIGNED;
-                                    goto hex_parser_exit;
+																	
+                                    // check if real skip over bin buffer
+                                    skipsize = ((next_address_to_write & 0xffff0000) | line.address) - next_address_to_write;
+                                    if ((uint32_t)(*bin_buf_cnt) + skipsize + line.byte_count > bin_buf_size)
+                                    {
+                                        load_unaligned_record = 1;
+                                        status = HEX_PARSE_UNALIGNED;
+                                        goto hex_parser_exit;
+                                    }
+                                    else
+                                    {
+                                        // pad 0xFF
+                                        memset(bin_buf, 0xff, skipsize);
+                                        bin_buf += skipsize;
+                                        *bin_buf_cnt = (uint32_t)(*bin_buf_cnt) + skipsize;
+                                    }
                                 }
 
                                 // move from line buffer back to input buffer
@@ -184,8 +198,8 @@ hexfile_parse_status_t parse_hex_blob(const uint8_t *hex_blob, const uint32_t he
                                 status = HEX_PARSE_UNALIGNED;
                                 return status;                                
                             
-                            case START_SEG_ADDR_RECORD:                           
-                            case START_LINEAR_ADDR_RECORD:                           
+                            case START_SEG_ADDR_RECORD:
+                            case START_LINEAR_ADDR_RECORD:
                             default:
                                 break;
                         }
