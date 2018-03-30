@@ -841,6 +841,8 @@ static uint8_t get_target_id(uint32_t coreid)
                 rc = Target_STM32F405;
             }else if (tmp == 0x00000415){
                 rc = Target_STM32L486;
+            }else if (tmp == 0x00000439){
+                rc = Target_STM32F301K8;	
             }else if (tmp == 0x00000000){
                 //check again
                 if (!swd_read_word(0x10000000, &tmp)) {
