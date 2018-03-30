@@ -18,6 +18,8 @@ common:
             - source/target/mesheven/DBG_STM32F103RC/stm32f103_target_flash.c
             - source/target/mesheven/DBG_STM32F405/stm32f405_target_flash.c
             - source/target/mesheven/DBG_STM32L486/stm32l486_target_flash.c
+            - source/target/mesheven/DBG_STM32F301K8/stm32f301k8_target_flash.c
+            - source/target/mesheven/DBG_STM32F301K8/stm32f301k8_target_reset.c        
             - source/target/mesheven/target.c                     
             - source/target/mesheven/target_ids.h
             - source/target/mesheven/target_reset.c
