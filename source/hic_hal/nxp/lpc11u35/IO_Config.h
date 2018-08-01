@@ -44,6 +44,7 @@ COMPILER_ASSERT(DAPLINK_HIC_ID == DAPLINK_HIC_ID_LPC11U35);
 #define PULL_DOWN_ENABLED               (1 << 3)
 #define PULL_UP_ENABLED                 (2 << 3)
 #define OPENDRAIN                       (1 << 10)
+#define DIGITAL_FUN_MODE                (1 << 7)
 
 // DAP LED                              PIO0_13
 #define PIN_DAP_LED_PORT                0
@@ -58,7 +59,6 @@ COMPILER_ASSERT(DAPLINK_HIC_ID == DAPLINK_HIC_ID_LPC11U35);
 #define PIN_CDC_LED                     (1 << PIN_CDC_LED_BIT)
 #define PIN_CDC_LED_IOCON               LPC_IOCON->TMS_PIO0_12
 #define PIN_CDC_LED_IOCON_INIT          (FUNC_1)
-
 
 // Forwarded Reset in PIN               PIO0_2
 #define PIN_RESET_IN_FWRD_PORT          0
