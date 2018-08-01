@@ -33,7 +33,7 @@ enum
 	PIN_CONFIG_DT01 = 0,
 	PIN_CONFIG_1    = 1,
 	PIN_CONFIG_2    = 2,
-	PIN_CONFIG_3    = 3,	
+	PIN_CONFIG_3    = 3,
 };
 
 enum
@@ -54,6 +54,8 @@ void gpio_set_cdc_led(gpio_led_state_t state);
 uint8_t gpio_get_sw_reset(void);
 
 uint8_t gpio_get_config(uint8_t cfgid);
+uint16_t gpio_all_pins(void);
+
 
 #ifdef __cplusplus
 }

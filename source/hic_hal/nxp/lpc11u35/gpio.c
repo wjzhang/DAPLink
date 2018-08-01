@@ -83,31 +83,31 @@ void gpio_init(void)
     LPC_SYSCON->SYSAHBCLKCTRL |= (1UL << 6);
     
 	//config the CFG 4 pins as input
-    PIN_CFG0_IOCON = PIN_CFG0_IOCON_INIT;
+    PIN_CFG0_IOCON |= PIN_CFG0_IOCON_INIT;
     LPC_GPIO->CLR[PIN_CFG0_PORT] = PIN_CFG0;
     LPC_GPIO->DIR[PIN_CFG0_PORT] &= ~PIN_CFG0;
-    PIN_CFG1_IOCON = PIN_CFG1_IOCON_INIT;
+    PIN_CFG1_IOCON |= PIN_CFG1_IOCON_INIT;
     LPC_GPIO->CLR[PIN_CFG1_PORT] = PIN_CFG1;
     LPC_GPIO->DIR[PIN_CFG1_PORT] &= ~PIN_CFG1;
-    PIN_CFG2_IOCON = PIN_CFG2_IOCON_INIT;
+    PIN_CFG2_IOCON |= PIN_CFG2_IOCON_INIT;
     LPC_GPIO->CLR[PIN_CFG2_PORT] = PIN_CFG2;
     LPC_GPIO->DIR[PIN_CFG2_PORT] &= ~PIN_CFG2;
-    PIN_CFG3_IOCON = PIN_CFG3_IOCON_INIT;
+    PIN_CFG3_IOCON |= PIN_CFG3_IOCON_INIT;
     LPC_GPIO->CLR[PIN_CFG3_PORT] = PIN_CFG3;
     LPC_GPIO->DIR[PIN_CFG3_PORT] &= ~PIN_CFG3;    
     
     // configure GPIO-LED as output
     // DAP led (green)
-    PIN_DAP_LED_IOCON = PIN_DAP_LED_IOCON_INIT;
+    PIN_DAP_LED_IOCON |= PIN_DAP_LED_IOCON_INIT;
     LPC_GPIO->SET[PIN_DAP_LED_PORT] = PIN_DAP_LED;
     LPC_GPIO->DIR[PIN_DAP_LED_PORT] |= PIN_DAP_LED;
     // Serial LED (blue)
-    PIN_CDC_LED_IOCON = PIN_CDC_LED_IOCON_INIT;
+    PIN_CDC_LED_IOCON |= PIN_CDC_LED_IOCON_INIT;
     LPC_GPIO->SET[PIN_CDC_LED_PORT] = PIN_CDC_LED;
     LPC_GPIO->DIR[PIN_CDC_LED_PORT] |= PIN_CDC_LED;
     
     // configure Button(s) as input   
-    PIN_RESET_IN_FWRD_IOCON = PIN_RESET_IN_FWRD_IOCON_INIT;
+    PIN_RESET_IN_FWRD_IOCON |= PIN_RESET_IN_FWRD_IOCON_INIT;
     LPC_GPIO->DIR[PIN_RESET_IN_FWRD_PORT] &= ~PIN_RESET_IN_FWRD;
     
     /* Enable AHB clock to the FlexInt, GroupedInt domain. */
@@ -189,6 +189,15 @@ uint8_t gpio_get_config(uint8_t cfgid)
 			rc = gpio_get_config3();
 			break;
     }
+
+	return rc;
+}
+
+uint16_t gpio_all_pins(void)
+{
+    uint16_t rc = 0;
+
+    rc = gpio_get_config0() | (gpio_get_config1() << 1) | (gpio_get_config2() << 2) | (gpio_get_config3() << 3);
 
 	return rc;
 }
