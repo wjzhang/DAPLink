@@ -44,20 +44,21 @@ COMPILER_ASSERT(DAPLINK_HIC_ID == DAPLINK_HIC_ID_LPC11U35);
 #define PULL_DOWN_ENABLED               (1 << 3)
 #define PULL_UP_ENABLED                 (2 << 3)
 #define OPENDRAIN                       (1 << 10)
+#define DIGITAL_FUN_MODE                (1 << 7)
 
 // DAP LED                              PIO0_13
 #define PIN_DAP_LED_PORT                0
 #define PIN_DAP_LED_BIT                 13
 #define PIN_DAP_LED                     (1 << PIN_DAP_LED_BIT)
 #define PIN_DAP_LED_IOCON               LPC_IOCON->TDO_PIO0_13
-#define PIN_DAP_LED_IOCON_INIT          (FUNC_1 | PULL_UP_ENABLED)
+#define PIN_DAP_LED_IOCON_INIT          (FUNC_1 | PULL_UP_ENABLED | DIGITAL_FUN_MODE)
 
 // CDC LED                              PIO0_12
 #define PIN_CDC_LED_PORT                0
 #define PIN_CDC_LED_BIT                 12
 #define PIN_CDC_LED                     (1 << PIN_CDC_LED_BIT)
 #define PIN_CDC_LED_IOCON               LPC_IOCON->TMS_PIO0_12
-#define PIN_CDC_LED_IOCON_INIT          (FUNC_1 | PULL_UP_ENABLED)
+#define PIN_CDC_LED_IOCON_INIT          (FUNC_1 | PULL_UP_ENABLED | DIGITAL_FUN_MODE)
 
 
 // Forwarded Reset in PIN               PIO0_2
@@ -114,20 +115,20 @@ COMPILER_ASSERT(DAPLINK_HIC_ID == DAPLINK_HIC_ID_LPC11U35);
 #define PIN_CFG1_BIT                    16
 #define PIN_CFG1                        (1 << PIN_CFG1_BIT)
 #define PIN_CFG1_IOCON                  LPC_IOCON->PIO0_16
-#define PIN_CFG1_IOCON_INIT             (FUNC_0 | PULL_UP_ENABLED)
+#define PIN_CFG1_IOCON_INIT             (FUNC_0 | PULL_UP_ENABLED | DIGITAL_FUN_MODE)
 
 // CFG2 pin                             PIO0_11
 #define PIN_CFG2_PORT                   0
 #define PIN_CFG2_BIT                    11
 #define PIN_CFG2                        (1 << PIN_CFG2_BIT)
 #define PIN_CFG2_IOCON                  LPC_IOCON->TDI_PIO0_11
-#define PIN_CFG2_IOCON_INIT             (FUNC_1 | PULL_UP_ENABLED)
+#define PIN_CFG2_IOCON_INIT             (FUNC_1 | PULL_UP_ENABLED | DIGITAL_FUN_MODE)
 
 // CFG3 pin                             PIO0_14
 #define PIN_CFG3_PORT                   0
 #define PIN_CFG3_BIT                    14
 #define PIN_CFG3                        (1 << PIN_CFG3_BIT)
 #define PIN_CFG3_IOCON                  LPC_IOCON->TRST_PIO0_14
-#define PIN_CFG3_IOCON_INIT             (FUNC_1 | PULL_UP_ENABLED)
+#define PIN_CFG3_IOCON_INIT             (FUNC_1 | PULL_UP_ENABLED | DIGITAL_FUN_MODE)
 
 #endif
