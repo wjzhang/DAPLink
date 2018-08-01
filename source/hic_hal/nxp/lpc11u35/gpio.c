@@ -84,16 +84,12 @@ void gpio_init(void)
     
 	//config the CFG 4 pins as input
     PIN_CFG0_IOCON |= PIN_CFG0_IOCON_INIT;
-    LPC_GPIO->CLR[PIN_CFG0_PORT] = PIN_CFG0;
     LPC_GPIO->DIR[PIN_CFG0_PORT] &= ~PIN_CFG0;
     PIN_CFG1_IOCON |= PIN_CFG1_IOCON_INIT;
-    LPC_GPIO->CLR[PIN_CFG1_PORT] = PIN_CFG1;
     LPC_GPIO->DIR[PIN_CFG1_PORT] &= ~PIN_CFG1;
     PIN_CFG2_IOCON |= PIN_CFG2_IOCON_INIT;
-    LPC_GPIO->CLR[PIN_CFG2_PORT] = PIN_CFG2;
     LPC_GPIO->DIR[PIN_CFG2_PORT] &= ~PIN_CFG2;
     PIN_CFG3_IOCON |= PIN_CFG3_IOCON_INIT;
-    LPC_GPIO->CLR[PIN_CFG3_PORT] = PIN_CFG3;
     LPC_GPIO->DIR[PIN_CFG3_PORT] &= ~PIN_CFG3;    
     
     // configure GPIO-LED as output
@@ -199,7 +195,7 @@ uint16_t gpio_all_pins(void)
 
     rc = gpio_get_config0() | (gpio_get_config1() << 1) | (gpio_get_config2() << 2) | (gpio_get_config3() << 3);
 
-	return rc;
+    return rc;
 }
 
 uint8_t gpio_get_sw_reset(void)
