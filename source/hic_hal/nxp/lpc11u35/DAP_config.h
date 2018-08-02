@@ -433,12 +433,12 @@ Status LEDs. In detail the operation of Hardware I/O and LED pins are enabled an
 static __inline void DAP_SETUP(void)
 {
     // Configure I/O pins
-    PIN_SWCLK_TCK_IOCON = PIN_SWCLK_TCK_IOCON_INIT;  // SWCLK/TCK
-    PIN_SWDIO_TMS_IOCON = PIN_SWDIO_TMS_IOCON_INIT;  // SWDIO/TMS
-    PIN_nRESET_IOCON    = PIN_nRESET_IOCON_INIT;        // nRESET
+    PIN_SWCLK_TCK_IOCON |= PIN_SWCLK_TCK_IOCON_INIT;  // SWCLK/TCK
+    PIN_SWDIO_TMS_IOCON |= PIN_SWDIO_TMS_IOCON_INIT;  // SWDIO/TMS
+    PIN_nRESET_IOCON    |= PIN_nRESET_IOCON_INIT;        // nRESET
 #if (DAP_JTAG != 0)
-    PIN_TDI_IOCON       = PIN_TDI_IOCON_INIT;  // TDI
-    PIN_TDO_IOCON       = PIN_TDO_IOCON_INIT;  // TDO
+    PIN_TDI_IOCON       |= PIN_TDI_IOCON_INIT;  // TDI
+    PIN_TDO_IOCON       |= PIN_TDO_IOCON_INIT;  // TDO
 #endif
 }
 

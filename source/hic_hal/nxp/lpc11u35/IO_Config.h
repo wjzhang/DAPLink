@@ -51,84 +51,139 @@ COMPILER_ASSERT(DAPLINK_HIC_ID == DAPLINK_HIC_ID_LPC11U35);
 #define PIN_DAP_LED_BIT                 13
 #define PIN_DAP_LED                     (1 << PIN_DAP_LED_BIT)
 #define PIN_DAP_LED_IOCON               LPC_IOCON->TDO_PIO0_13
-#define PIN_DAP_LED_IOCON_INIT          (FUNC_1 | PULL_UP_ENABLED | DIGITAL_FUN_MODE)
+#define PIN_DAP_LED_IOCON_INIT          (FUNC_1)
 
 // CDC LED                              PIO0_12
 #define PIN_CDC_LED_PORT                0
 #define PIN_CDC_LED_BIT                 12
 #define PIN_CDC_LED                     (1 << PIN_CDC_LED_BIT)
 #define PIN_CDC_LED_IOCON               LPC_IOCON->TMS_PIO0_12
-#define PIN_CDC_LED_IOCON_INIT          (FUNC_1 | PULL_UP_ENABLED | DIGITAL_FUN_MODE)
-
+#define PIN_CDC_LED_IOCON_INIT          (FUNC_1)
 
 // Forwarded Reset in PIN               PIO0_2
 #define PIN_RESET_IN_FWRD_PORT          0
 #define PIN_RESET_IN_FWRD_BIT           2
 #define PIN_RESET_IN_FWRD               (1 << PIN_RESET_IN_FWRD_BIT)
 #define PIN_RESET_IN_FWRD_IOCON         LPC_IOCON->PIO0_2
-#define PIN_RESET_IN_FWRD_IOCON_INIT    (FUNC_0 | PULL_UP_ENABLED)
+#define PIN_RESET_IN_FWRD_IOCON_INIT    (FUNC_0)
 
 // nRESET OUT Pin                       PIO0_23
 #define PIN_nRESET_PORT                 0
 #define PIN_nRESET_BIT                  23
 #define PIN_nRESET                      (1 << PIN_nRESET_BIT)
 #define PIN_nRESET_IOCON                LPC_IOCON->PIO0_23
-#define PIN_nRESET_IOCON_INIT           (FUNC_0 | OPENDRAIN | PULL_UP_ENABLED)
+#define PIN_nRESET_IOCON_INIT           (FUNC_0 | OPENDRAIN)
 
 // SWCLK/TCK Pin                        PIO0_9
 #define PIN_SWCLK_PORT                  0
 #define PIN_SWCLK_BIT                   9
 #define PIN_SWCLK                       (1 << PIN_SWCLK_BIT)
 #define PIN_SWCLK_TCK_IOCON             LPC_IOCON->PIO0_9
-#define PIN_SWCLK_TCK_IOCON_INIT        (FUNC_0 | PULL_DOWN_ENABLED)
+#define PIN_SWCLK_TCK_IOCON_INIT        (FUNC_0)
 
 // SWDIO/TMS In/Out Pin                 PIO0_8
 #define PIN_SWDIO_PORT                  0
 #define PIN_SWDIO_BIT                   8
 #define PIN_SWDIO                       (1 << PIN_SWDIO_BIT)
 #define PIN_SWDIO_TMS_IOCON             LPC_IOCON->PIO0_8
-#define PIN_SWDIO_TMS_IOCON_INIT        (FUNC_0 | PULL_UP_ENABLED)
+#define PIN_SWDIO_TMS_IOCON_INIT        (FUNC_0)
 
 // TDI Pin                              PIO0_17
 #define PIN_TDI_PORT                    0
 #define PIN_TDI_BIT                     17
 #define PIN_TDI                         (1 << PIN_TDI_BIT)
 #define PIN_TDI_IOCON                   LPC_IOCON->PIO0_17
-#define PIN_TDI_IOCON_INIT              (FUNC_0 | PULL_UP_ENABLED)
+#define PIN_TDI_IOCON_INIT              (FUNC_0)
 
 // SWO/TDO Pin                          PIO0_9
 #define PIN_TDO_PORT                    0
 #define PIN_TDO_BIT                     9
 #define PIN_TDO                         (1 << PIN_TDO_BIT)
 #define PIN_TDO_IOCON                   LPC_IOCON->PIO0_9
-#define PIN_TDO_IOCON_INIT              (FUNC_0 | PULL_UP_ENABLED)
+#define PIN_TDO_IOCON_INIT              (FUNC_0)
 
-// CFG0 pin                             PIO0_20
-#define PIN_CFG0_PORT                   0
-#define PIN_CFG0_BIT                    20
-#define PIN_CFG0                        (1 << PIN_CFG0_BIT)
-#define PIN_CFG0_IOCON                  LPC_IOCON->PIO0_20
-#define PIN_CFG0_IOCON_INIT             (FUNC_0 | PULL_UP_ENABLED)
+// A0 pin                             PIO0_20
+#define PIN_A0_PORT                   0
+#define PIN_A0_BIT                    20
+#define PIN_A0                        (1 << PIN_A0_BIT)
+#define PIN_A0_IOCON                  LPC_IOCON->PIO0_20
+#define PIN_A0_IOCON_INIT             (FUNC_0)
 
-// CFG1 pin                             PIO0_16
-#define PIN_CFG1_PORT                   0
-#define PIN_CFG1_BIT                    16
-#define PIN_CFG1                        (1 << PIN_CFG1_BIT)
-#define PIN_CFG1_IOCON                  LPC_IOCON->PIO0_16
-#define PIN_CFG1_IOCON_INIT             (FUNC_0 | PULL_UP_ENABLED | DIGITAL_FUN_MODE)
+// A1 pin                             PIO0_16
+#define PIN_A1_PORT                   0
+#define PIN_A1_BIT                    16
+#define PIN_A1                        (1 << PIN_A1_BIT)
+#define PIN_A1_IOCON                  LPC_IOCON->PIO0_16
+#define PIN_A1_IOCON_INIT             (FUNC_0)
 
-// CFG2 pin                             PIO0_11
-#define PIN_CFG2_PORT                   0
-#define PIN_CFG2_BIT                    11
-#define PIN_CFG2                        (1 << PIN_CFG2_BIT)
-#define PIN_CFG2_IOCON                  LPC_IOCON->TDI_PIO0_11
-#define PIN_CFG2_IOCON_INIT             (FUNC_1 | PULL_UP_ENABLED | DIGITAL_FUN_MODE)
+// A2 pin                             PIO0_11
+#define PIN_A2_PORT                   0
+#define PIN_A2_BIT                    11
+#define PIN_A2                        (1 << PIN_A2_BIT)
+#define PIN_A2_IOCON                  LPC_IOCON->TDI_PIO0_11
+#define PIN_A2_IOCON_INIT             (FUNC_1)
 
-// CFG3 pin                             PIO0_14
-#define PIN_CFG3_PORT                   0
-#define PIN_CFG3_BIT                    14
-#define PIN_CFG3                        (1 << PIN_CFG3_BIT)
-#define PIN_CFG3_IOCON                  LPC_IOCON->TRST_PIO0_14
-#define PIN_CFG3_IOCON_INIT             (FUNC_1 | PULL_UP_ENABLED | DIGITAL_FUN_MODE)
+// A3 pin                             PIO0_14
+#define PIN_A3_PORT                   0
+#define PIN_A3_BIT                    14
+#define PIN_A3                        (1 << PIN_A3_BIT)
+#define PIN_A3_IOCON                  LPC_IOCON->TRST_PIO0_14
+#define PIN_A3_IOCON_INIT             (FUNC_1)
+
+// A4 pin                             PIO0_21
+#define PIN_A4_PORT                   0
+#define PIN_A4_BIT                    14
+#define PIN_A4                        (1 << PIN_A4_BIT)
+#define PIN_A4_IOCON                  LPC_IOCON->PIO0_21
+#define PIN_A4_IOCON_INIT             (FUNC_0)
+
+// A5 pin                             PIO0_22
+#define PIN_A5_PORT                   0
+#define PIN_A5_BIT                    14
+#define PIN_A5                        (1 << PIN_A5_BIT)
+#define PIN_A5_IOCON                  LPC_IOCON->PIO0_22
+#define PIN_A5_IOCON_INIT             (FUNC_0)
+
+// A6 pin                             PIO1_15
+#define PIN_A6_PORT                   0
+#define PIN_A6_BIT                    14
+#define PIN_A6                        (1 << PIN_A6_BIT)
+#define PIN_A6_IOCON                  LPC_IOCON->PIO1_15
+#define PIN_A6_IOCON_INIT             (FUNC_0)
+
+// A7 pin                             PIO1_19
+#define PIN_A7_PORT                   0
+#define PIN_A7_BIT                    14
+#define PIN_A7                        (1 << PIN_A7_BIT)
+#define PIN_A7_IOCON                  LPC_IOCON->PIO1_19
+#define PIN_A7_IOCON_INIT             (FUNC_0)
+
+// A8 pin                             PIO0_4
+#define PIN_A8_PORT                   0
+#define PIN_A8_BIT                    14
+#define PIN_A8                        (1 << PIN_A8_BIT)
+#define PIN_A8_IOCON                  LPC_IOCON->PIO0_4
+#define PIN_A8_IOCON_INIT             (FUNC_0)
+
+// A9 pin                             PIO0_5
+#define PIN_A9_PORT                   0
+#define PIN_A9_BIT                    14
+#define PIN_A9                        (1 << PIN_A9_BIT)
+#define PIN_A9_IOCON                  LPC_IOCON->PIO0_5
+#define PIN_A9_IOCON_INIT             (FUNC_0)
+
+// A10 pin                             PIO0_10
+#define PIN_A10_PORT                   0
+#define PIN_A10_BIT                    14
+#define PIN_A10                        (1 << PIN_A10_BIT)
+#define PIN_A10_IOCON                  LPC_IOCON->SWCLK_PIO0_10
+#define PIN_A10_IOCON_INIT             (FUNC_1)
+
+// A11 pin                             PIO0_15
+#define PIN_A11_PORT                   0
+#define PIN_A11_BIT                    14
+#define PIN_A11                        (1 << PIN_A11_BIT)
+#define PIN_A11_IOCON                  LPC_IOCON->SWDIO_PIO0_15
+#define PIN_A11_IOCON_INIT             (FUNC_1)
 
 #endif

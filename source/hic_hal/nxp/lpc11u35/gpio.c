@@ -83,31 +83,43 @@ void gpio_init(void)
     LPC_SYSCON->SYSAHBCLKCTRL |= (1UL << 6);
     
 	//config the CFG 4 pins as input
-    PIN_CFG0_IOCON = PIN_CFG0_IOCON_INIT;
-    LPC_GPIO->CLR[PIN_CFG0_PORT] = PIN_CFG0;
-    LPC_GPIO->DIR[PIN_CFG0_PORT] &= ~PIN_CFG0;
-    PIN_CFG1_IOCON = PIN_CFG1_IOCON_INIT;
-    LPC_GPIO->CLR[PIN_CFG1_PORT] = PIN_CFG1;
-    LPC_GPIO->DIR[PIN_CFG1_PORT] &= ~PIN_CFG1;
-    PIN_CFG2_IOCON = PIN_CFG2_IOCON_INIT;
-    LPC_GPIO->CLR[PIN_CFG2_PORT] = PIN_CFG2;
-    LPC_GPIO->DIR[PIN_CFG2_PORT] &= ~PIN_CFG2;
-    PIN_CFG3_IOCON = PIN_CFG3_IOCON_INIT;
-    LPC_GPIO->CLR[PIN_CFG3_PORT] = PIN_CFG3;
-    LPC_GPIO->DIR[PIN_CFG3_PORT] &= ~PIN_CFG3;    
+    PIN_A0_IOCON |= PIN_A0_IOCON_INIT;
+    LPC_GPIO->DIR[PIN_A0_PORT] &= ~PIN_A0;
+    PIN_A1_IOCON |= PIN_A1_IOCON_INIT;
+    LPC_GPIO->DIR[PIN_A1_PORT] &= ~PIN_A1;
+    PIN_A2_IOCON |= PIN_A2_IOCON_INIT;
+    LPC_GPIO->DIR[PIN_A2_PORT] &= ~PIN_A2;
+    PIN_A3_IOCON |= PIN_A3_IOCON_INIT;
+    LPC_GPIO->DIR[PIN_A3_PORT] &= ~PIN_A3;
+    PIN_A4_IOCON |= PIN_A4_IOCON_INIT;
+    LPC_GPIO->DIR[PIN_A4_PORT] &= ~PIN_A4;
+    PIN_A5_IOCON |= PIN_A5_IOCON_INIT;
+    LPC_GPIO->DIR[PIN_A5_PORT] &= ~PIN_A5;
+    PIN_A6_IOCON |= PIN_A6_IOCON_INIT;
+    LPC_GPIO->DIR[PIN_A6_PORT] &= ~PIN_A6;
+    PIN_A7_IOCON |= PIN_A7_IOCON_INIT;
+    LPC_GPIO->DIR[PIN_A7_PORT] &= ~PIN_A7;
+    PIN_A8_IOCON |= PIN_A8_IOCON_INIT;
+    LPC_GPIO->DIR[PIN_A8_PORT] &= ~PIN_A8;
+    PIN_A9_IOCON |= PIN_A9_IOCON_INIT;
+    LPC_GPIO->DIR[PIN_A9_PORT] &= ~PIN_A9;
+    PIN_A10_IOCON |= PIN_A10_IOCON_INIT;
+    LPC_GPIO->DIR[PIN_A10_PORT] &= ~PIN_A10;
+    PIN_A11_IOCON |= PIN_A11_IOCON_INIT;
+    LPC_GPIO->DIR[PIN_A11_PORT] &= ~PIN_A11;
     
     // configure GPIO-LED as output
     // DAP led (green)
-    PIN_DAP_LED_IOCON = PIN_DAP_LED_IOCON_INIT;
+    PIN_DAP_LED_IOCON |= PIN_DAP_LED_IOCON_INIT;
     LPC_GPIO->SET[PIN_DAP_LED_PORT] = PIN_DAP_LED;
     LPC_GPIO->DIR[PIN_DAP_LED_PORT] |= PIN_DAP_LED;
     // Serial LED (blue)
-    PIN_CDC_LED_IOCON = PIN_CDC_LED_IOCON_INIT;
+    PIN_CDC_LED_IOCON |= PIN_CDC_LED_IOCON_INIT;
     LPC_GPIO->SET[PIN_CDC_LED_PORT] = PIN_CDC_LED;
     LPC_GPIO->DIR[PIN_CDC_LED_PORT] |= PIN_CDC_LED;
     
     // configure Button(s) as input   
-    PIN_RESET_IN_FWRD_IOCON = PIN_RESET_IN_FWRD_IOCON_INIT;
+    PIN_RESET_IN_FWRD_IOCON |= PIN_RESET_IN_FWRD_IOCON_INIT;
     LPC_GPIO->DIR[PIN_RESET_IN_FWRD_PORT] &= ~PIN_RESET_IN_FWRD;
     
     /* Enable AHB clock to the FlexInt, GroupedInt domain. */
@@ -150,22 +162,22 @@ void gpio_set_cdc_led(gpio_led_state_t state)
 
 static uint32_t gpio_get_config0(void)
 {
-	return ((LPC_GPIO->PIN[PIN_CFG0_PORT] & PIN_CFG0) != 0x00)? PIN_HIGH:PIN_LOW;
+	return ((LPC_GPIO->PIN[PIN_A0_PORT] & PIN_A0) != 0x00)? PIN_HIGH:PIN_LOW;
 }
 
 static uint32_t gpio_get_config1(void)
 {
-	return ((LPC_GPIO->PIN[PIN_CFG1_PORT] & PIN_CFG1) != 0x00)? PIN_HIGH:PIN_LOW;
+	return ((LPC_GPIO->PIN[PIN_A1_PORT] & PIN_A1) != 0x00)? PIN_HIGH:PIN_LOW;
 }
 
 static uint32_t gpio_get_config2(void)
 {
-	return ((LPC_GPIO->PIN[PIN_CFG2_PORT] & PIN_CFG2) != 0x00)? PIN_HIGH:PIN_LOW;
+	return ((LPC_GPIO->PIN[PIN_A2_PORT] & PIN_A2) != 0x00)? PIN_HIGH:PIN_LOW;
 }
 
 static uint32_t gpio_get_config3(void)
 {
-	return ((LPC_GPIO->PIN[PIN_CFG3_PORT] & PIN_CFG3) != 0x00)? PIN_HIGH:PIN_LOW;
+	return ((LPC_GPIO->PIN[PIN_A3_PORT] & PIN_A3) != 0x00)? PIN_HIGH:PIN_LOW;
 }
 
 uint8_t gpio_get_config(uint8_t cfgid)
@@ -191,6 +203,28 @@ uint8_t gpio_get_config(uint8_t cfgid)
     }
 
 	return rc;
+}
+
+uint16_t gpio_all_pins(void)
+{
+    uint16_t rc = 0;
+
+    uint16_t a0 = ((LPC_GPIO->PIN[PIN_A0_PORT] & PIN_A0) != 0x00);
+    uint16_t a1 = ((LPC_GPIO->PIN[PIN_A1_PORT] & PIN_A1) != 0x00);
+    uint16_t a2 = ((LPC_GPIO->PIN[PIN_A2_PORT] & PIN_A2) != 0x00);
+    uint16_t a3 = ((LPC_GPIO->PIN[PIN_A3_PORT] & PIN_A3) != 0x00);
+    uint16_t a4 = ((LPC_GPIO->PIN[PIN_A4_PORT] & PIN_A4) != 0x00);
+    uint16_t a5 = ((LPC_GPIO->PIN[PIN_A5_PORT] & PIN_A5) != 0x00);
+    uint16_t a6 = ((LPC_GPIO->PIN[PIN_A6_PORT] & PIN_A6) != 0x00);
+    uint16_t a7 = ((LPC_GPIO->PIN[PIN_A7_PORT] & PIN_A7) != 0x00);
+    uint16_t a8 = ((LPC_GPIO->PIN[PIN_A8_PORT] & PIN_A8) != 0x00);
+    uint16_t a9 = ((LPC_GPIO->PIN[PIN_A9_PORT] & PIN_A9) != 0x00);
+    uint16_t a10 = ((LPC_GPIO->PIN[PIN_A10_PORT] & PIN_A10) != 0x00);
+    uint16_t a11 = ((LPC_GPIO->PIN[PIN_A11_PORT] & PIN_A11) != 0x00);
+
+    rc = a0 + (a1<<1) + (a2<<2) + (a3<<3) + (a4<<4) + (a5<<5) + (a6<<6) + (a7<<7) + (a8<<8) + (a9<<9) + (a10<<10) + (a11<<11);
+
+    return rc;
 }
 
 uint8_t gpio_get_sw_reset(void)
