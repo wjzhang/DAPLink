@@ -79,10 +79,10 @@ static void busy_wait(uint32_t cycles)
 
 void gpio_init(void)
 {
-    // enable clock for GPIO port 0
+    // enable clock for GPIO port
     LPC_SYSCON->SYSAHBCLKCTRL |= (1UL << 6);
     
-	//config the CFG 4 pins as input
+	//config the pins as input
     PIN_A0_IOCON |= PIN_A0_IOCON_INIT;
     LPC_GPIO->DIR[PIN_A0_PORT] &= ~PIN_A0;
     PIN_A1_IOCON |= PIN_A1_IOCON_INIT;
