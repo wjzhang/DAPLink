@@ -30,6 +30,7 @@
 #include "DAP.h"
 #include "target_config.h"
 #include "read_uid.h"
+#include "gpio.h"
 
 void main_identification_led(uint16_t time);
 
@@ -66,7 +67,13 @@ uint32_t DAP_ProcessVendorCommand(uint8_t *request, uint8_t *response)
         *(response + 1) = 16;
         memcpy(response + 2, (uint8_t *)fullUniqueId, 16);
         return (16 + 2);
-    }    
+    }
+    else if (*request == ID_DAP_Vendor3) {
+        *response = ID_DAP_Vendor3;
+        *(response + 1) = gpio_all_pins() & 0xFF;
+        *(response + 2) = (gpio_all_pins() >> 8) & 0xFF;
+        return 3;
+    } 
     else if (*request == ID_DAP_Vendor31) {
         uint16_t time = request[1]  | (request[2] << 8) ;
         main_identification_led(time);
