@@ -209,18 +209,18 @@ uint16_t gpio_all_pins(void)
 {
     uint16_t rc = 0;
 
-    uint16_t a0 = ((LPC_GPIO->PIN[PIN_A0_PORT] & PIN_A0) != 0x00);
-    uint16_t a1 = ((LPC_GPIO->PIN[PIN_A1_PORT] & PIN_A1) != 0x00);
-    uint16_t a2 = ((LPC_GPIO->PIN[PIN_A2_PORT] & PIN_A2) != 0x00);
-    uint16_t a3 = ((LPC_GPIO->PIN[PIN_A3_PORT] & PIN_A3) != 0x00);
-    uint16_t a4 = ((LPC_GPIO->PIN[PIN_A4_PORT] & PIN_A4) != 0x00);
-    uint16_t a5 = ((LPC_GPIO->PIN[PIN_A5_PORT] & PIN_A5) != 0x00);
-    uint16_t a6 = ((LPC_GPIO->PIN[PIN_A6_PORT] & PIN_A6) != 0x00);
-    uint16_t a7 = ((LPC_GPIO->PIN[PIN_A7_PORT] & PIN_A7) != 0x00);
-    uint16_t a8 = ((LPC_GPIO->PIN[PIN_A8_PORT] & PIN_A8) != 0x00);
-    uint16_t a9 = ((LPC_GPIO->PIN[PIN_A9_PORT] & PIN_A9) != 0x00);
-    uint16_t a10 = ((LPC_GPIO->PIN[PIN_A10_PORT] & PIN_A10) != 0x00);
-    uint16_t a11 = ((LPC_GPIO->PIN[PIN_A11_PORT] & PIN_A11) != 0x00);
+    uint16_t a0 = ((LPC_GPIO->PIN[PIN_A0_PORT] & PIN_A0) != 0x00) ? 0x01 : 0x00;
+    uint16_t a1 = ((LPC_GPIO->PIN[PIN_A1_PORT] & PIN_A1) != 0x00) ? 0x01 : 0x00;
+    uint16_t a2 = ((LPC_GPIO->PIN[PIN_A2_PORT] & PIN_A2) != 0x00) ? 0x01 : 0x00;
+    uint16_t a3 = ((LPC_GPIO->PIN[PIN_A3_PORT] & PIN_A3) != 0x00) ? 0x01 : 0x00;
+    uint16_t a4 = ((LPC_GPIO->PIN[PIN_A4_PORT] & PIN_A4) != 0x00) ? 0x01 : 0x00;
+    uint16_t a5 = ((LPC_GPIO->PIN[PIN_A5_PORT] & PIN_A5) != 0x00) ? 0x01 : 0x00;
+    uint16_t a6 = ((LPC_GPIO->PIN[PIN_A6_PORT] & PIN_A6) != 0x00) ? 0x01 : 0x00;
+    uint16_t a7 = ((LPC_GPIO->PIN[PIN_A7_PORT] & PIN_A7) != 0x00) ? 0x01 : 0x00;
+    uint16_t a8 = ((LPC_GPIO->PIN[PIN_A8_PORT] & PIN_A8) != 0x00) ? 0x01 : 0x00;
+    uint16_t a9 = ((LPC_GPIO->PIN[PIN_A9_PORT] & PIN_A9) != 0x00) ? 0x01 : 0x00;
+    uint16_t a10 = ((LPC_GPIO->PIN[PIN_A10_PORT] & PIN_A10) != 0x00) ? 0x01 : 0x00;
+    uint16_t a11 = ((LPC_GPIO->PIN[PIN_A11_PORT] & PIN_A11) != 0x00) ? 0x01 : 0x00;
 
     rc = a0 + (a1<<1) + (a2<<2) + (a3<<3) + (a4<<4) + (a5<<5) + (a6<<6) + (a7<<7) + (a8<<8) + (a9<<9) + (a10<<10) + (a11<<11);
 
