@@ -27,6 +27,7 @@
 #include "DAP_config.h"
 #include "DAP.h"
 #include "target_ids.h"
+#include "gpio.h"
 
 // Default NVIC and Core debug base addresses
 // TODO: Read these addresses from ROM.
@@ -901,10 +902,12 @@ uint8_t swd_init_get_target(void)
     dap_state.csw = 0xffffffff;
     swd_init();
 
-    //add Reset Pin
-    swd_set_target_reset(1);
-    os_dly_wait(1);
-    swd_set_target_reset(0);
+    if (gpio_get_config(PIN_CONFIG_DT01) == PIN_HIGH) {
+        //add Reset Pin
+        swd_set_target_reset(1);
+        os_dly_wait(1);
+        swd_set_target_reset(0);
+    }
     //need wait 500us
     for( i = 0; i < 1200; i++) {}
 
@@ -946,26 +949,32 @@ uint8_t swd_init_get_target(void)
     // need halt MCU for read right data from Peripher address space when power on
     // Enable debug and halt the core (DHCSR <- 0xA05F0003)
     if (!swd_write_word(DBG_HCSR, DBGKEY | C_DEBUGEN | C_HALT)) {
-        return 0;
+        return Target_UNKNOWN;
     }
-    
+      
     // Enable halt on reset
     if (!swd_write_word(DBG_EMCR, VC_CORERESET)) {
-        return 0;
-    }    
+        return Target_UNKNOWN;
+    }  
+
+    // use hardware reset for STM32L486
+    if (gpio_get_config(PIN_CONFIG_DT01) == PIN_HIGH) {    
+        swd_set_target_reset(1);
+        os_dly_wait(1);
+        swd_set_target_reset(0);
+    }        
 
     // Wait until core is halted
     do {
         if (!swd_read_word(DBG_HCSR, &tmp)) {
-            return 0;
+            return Target_UNKNOWN;
         }
     } while ((tmp & S_HALT) == 0);
     
     // Disable halt on reset
     if (!swd_write_word(DBG_EMCR, 0)) {
-        return 0;
-    }    
-    
+        return Target_UNKNOWN;
+    }       
     
     // core ID -> target ID    
     return get_target_id(tmpid);

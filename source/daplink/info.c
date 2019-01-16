@@ -30,13 +30,15 @@
 #include "util.h"
 #include "crc.h"
 #include "daplink.h"
+#include "sha256.h"
 
 // Constant variables
 static const daplink_info_t *const info_bl = (daplink_info_t *)(DAPLINK_ROM_BL_START + DAPLINK_INFO_OFFSET);
 static const daplink_info_t *const info_if = (daplink_info_t *)(DAPLINK_ROM_IF_START + DAPLINK_INFO_OFFSET);
 
 // Raw variables
-static uint32_t host_id[4];
+static uint8_t  host_id_sha256[32];
+static uint32_t host_id[5] = {0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x4E58504C}; // first 4 worod lpc11u35 unique ID, latest: "NXPL"
 static uint32_t target_id[4];
 static uint32_t hic_id = DAPLINK_HIC_ID;
 
@@ -46,10 +48,10 @@ static uint32_t crc_config_admin;
 static uint32_t crc_config_user;
 
 // Strings
-static char string_unique_id[48 + 1];
+static char string_unique_id[64 + 1];
 static char string_mac[12 + 1];
 static char string_board_id[4 + 1];
-static char string_host_id[32 + 1];
+static char string_host_id[64 + 1];
 static char string_target_id[32 + 1];
 static char string_hic_id[8 + 1];
 static char string_version[4 + 1];
@@ -106,12 +108,9 @@ static void setup_basics()
     // Host ID
     idx = 0;
 
-//    for (i = 0; i < 4; i++) {
-//        idx += util_write_hex32(string_host_id + idx, host_id[i]);
-//    }
-    for (i = 0; i < 2; i++) {
-        idx += util_write_hex32(string_host_id + idx, host_id[i]);
-    }
+    for (i = 0; i < 32; i++) {
+        idx += util_write_hex8(string_host_id + idx, host_id_sha256[i]);
+    }    
 
     string_host_id[idx++] = 0;
     // Target ID
@@ -168,6 +167,7 @@ void info_init(void)
 {
     info_crc_compute();
     read_unique_id(host_id);
+    calc_sha_256(host_id_sha256, (const void *)host_id, 20);
     setup_basics();
     setup_unique_id();
     setup_string_descriptor();

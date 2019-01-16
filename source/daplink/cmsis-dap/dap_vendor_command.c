@@ -61,7 +61,7 @@ uint32_t DAP_ProcessVendorCommand(uint8_t *request, uint8_t *response)
     }
     else if (*request == ID_DAP_Vendor2) {
         uint32_t fullUniqueId[4];
-        read_full_unique_id(fullUniqueId);
+        read_unique_id(fullUniqueId);
 
         *response = ID_DAP_Vendor2;
         *(response + 1) = 16;
