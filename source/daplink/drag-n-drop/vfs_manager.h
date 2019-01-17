@@ -35,7 +35,7 @@ extern "C" {
 extern const vfs_filename_t daplink_mode_file_name;
 extern const vfs_filename_t daplink_drive_name;
 extern const vfs_filename_t daplink_url_name;
-extern const char *const daplink_target_url;
+//extern const char *const daplink_target_url;
 
 
 /* Callable from anywhere */

@@ -56,7 +56,7 @@ class TargetBundle(object):
                     pass
             else:
                 assert False
-        all_targets = name_to_target.values()
+        all_targets = list(name_to_target.values())
         self._target_list = [target for target in all_targets if target.valid]
 
     def get_target_list(self):
@@ -118,8 +118,6 @@ class Target(object):
         self._valid = False
         self._hex_path = None
         self._bin_path = None
-        assert name in info.TARGET_SET, 'Unknown target "%s" must be ' \
-            'added to SUPPORTED_CONFIGURATIONS in info.py' % name
         if hex_path is not None:
             self.set_hex_path(hex_path)
         if bin_path is not None:

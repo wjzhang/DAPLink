@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
- 
+
 from __future__ import absolute_import
 
 import os
@@ -28,7 +28,7 @@ import itertools
 import mbed_lstools
 import info
 import test_daplink
-from test_info import TestInfoStub
+from test_info import TestInfoStub, TestInfo
 from intelhex import IntelHex
 from pyOCD.board import MbedBoard
 
@@ -176,6 +176,16 @@ def _compute_crc(hex_file_path):
     return data_crc32, embedded_crc32
 
 
+def _run_chkdsk(drive):
+    args = ["chkdsk", drive]
+    process = subprocess.Popen(args, stdin=subprocess.PIPE,
+                               stdout=subprocess.PIPE,
+                               stderr=subprocess.PIPE)
+    process.communicate(input=bytearray('n\r\n',encoding='ascii'))  # Answer no if prompted
+    process.wait()
+    return process.returncode
+
+
 class AssertInfo(object):
 
     def __init__(self, file_name, line_number):
@@ -207,16 +217,18 @@ class DaplinkBoard(object):
     KEY_USB_INTERFACES = "usb_interfaces"
     KEY_BL_CRC = "bootloader_crc"
     KEY_IF_CRC = "interface_crc"
+    KEY_REMOUNT_COUNT = "remount_count"
 
     def __init__(self, unique_id):
 
         self.unique_id = unique_id
         self.details_txt = None
         self._mode = None
+        self._remount_count = None
         self._assert = None
         self._check_fs_on_remount = False
         self._manage_assert = False
-        self._update_board_info()
+        self.update_board_info()
 
     def __str__(self):
         return "Name=%s Unique ID=%s" % (self.name, self.get_unique_id())
@@ -249,19 +261,32 @@ class DaplinkBoard(object):
         """Check if the board is connected"""
         return os.path.isdir(self.mount_point)
 
-    def get_failure_message(self):
-        """Get the failure message from fail.txt
+    def get_failure_message_and_type(self):
+        """Get the failure message and types from fail.txt
 
         return None if there there is no failure
         """
-        msg = None
+        error = None
+        error_type = None
         fail_file = self.get_file_path('FAIL.TXT')
         if not self.get_connected():
             raise Exception('Board not connected')
         if os.path.isfile(fail_file):
-            with open(fail_file, 'rb') as fail_file_handle:
+            with open(fail_file, 'r') as fail_file_handle:
                 msg = fail_file_handle.read()
-        return msg
+                lines = msg.splitlines()
+                if len(lines) == 2:
+                    if lines[0].startswith('error: '):
+                        error = lines[0][7:]
+                    else:
+                        raise Exception('Can not parse error line in FAIL.TXT')
+                    if lines[1].startswith('type: '):
+                        error_type = lines[1][6:]
+                    else:
+                        raise Exception('Can not parse type line in FAIL.TXT')
+                else:
+                    raise Exception('Wrong number of lines in FAIL.TXT, expected: 2')
+        return error, error_type
 
     def get_assert_info(self):
         """Return an AssertInfo if an assert occurred, else None"""
@@ -300,22 +325,12 @@ class DaplinkBoard(object):
             test_info.info("changing mode IF -> BL")
             # Create file to enter BL mode
             start_bl_path = self.get_file_path('START_BL.ACT')
-            with open(start_bl_path, 'wb') as _:
-                pass
-            # Create file to enter BL mode - Legacy
-            start_bl_path = self.get_file_path('START_BL.CFG')
-            with open(start_bl_path, 'wb') as _:
-                pass
+            with open(start_bl_path, 'wb') as _: pass
         elif mode is self.MODE_IF:
             test_info.info("changing mode BL -> IF")
             # Create file to enter IF mode
             start_if_path = self.get_file_path('START_IF.ACT')
-            with open(start_if_path, 'wb') as _:
-                pass
-            # Create file to enter IF mode - Legacy
-            start_if_path = self.get_file_path('START_IF.CFG')
-            with open(start_if_path, 'wb') as _:
-                pass
+            with open(start_if_path, 'wb') as _: pass
         else:
             test_info.warning("Board is in unknown mode")
         self.wait_for_remount(test_info)
@@ -355,15 +370,38 @@ class DaplinkBoard(object):
         """Check if the raw filesystem is valid"""
         if sys.platform.startswith("win"):
             test_info = parent_test.create_subtest('test_fs')
-            args = ["chkdsk", self.mount_point]
-            process = subprocess.Popen(args, stdin=subprocess.PIPE,
-                                       stdout=subprocess.PIPE,
-                                       stderr=subprocess.PIPE)
-            process.communicate(input='n\r\n')  # Answer no if prompted
-            process.wait()
-            test_info.info('chkdsk returned %s' % process.returncode)
-            if process.returncode != 0:
+            returncode = _run_chkdsk(self.mount_point)
+            test_info.info('chkdsk returned %s' % returncode)
+            if returncode != 0:
                 test_info.failure('Disk corrupt')
+
+            # Windows 8/10 workaround - rerun chkdsk until disk caching is on
+            # Notes about this problem:
+            # - This is less likely to occur when the "storage" service is
+            #     turned off and/or you are running as administrator
+            # - When creating a directory with os.mkdir the
+            #     following error occurs: "WindowsError: [Error 1392] The
+            #     file or directory is corrupted and unreadable: '<directory>'"
+            # - When creating a file with open(<filename>, "wb") the
+            #     following error occurs: "OError: [Errno 22] invalid
+            #     mode ('wb') or filename: '<filename>'"
+            # - When a file or directory is created on the drive in explorer
+            #     and you preform a refresh, the newly created file or
+            #     directory disappears
+            persist_test_dir = self.get_file_path("persist_test_dir")
+            for _ in range(10):
+                try:
+                    os.mkdir(persist_test_dir)
+                except EnvironmentError as exception:
+                    test_info.info("cache check exception %s" % exception)
+                if os.path.exists(persist_test_dir):
+                    os.rmdir(persist_test_dir)
+                    break
+                test_info.info("running checkdisk to re-enable caching")
+                _run_chkdsk(self.mount_point)
+            else:
+                raise Exception("Unable to re-enable caching")
+
         # TODO - as a future improvement add linux and mac support
 
     # Tests for the following:
@@ -375,10 +413,10 @@ class DaplinkBoard(object):
     def test_fs_contents(self, parent_test):
         """Check if the file contents are valid"""
         test_info = parent_test.create_subtest('test_fs_contents')
-        non_ascii = r'[^\x20-\x7F\r\n]'
-        non_cr_lf = r'\r[^\n]|[^\r]\n'
-        trail_white = r'(?:\ \r|\ \n)'
-        end_of_file = r'\r\n$'
+        non_ascii = b'[^\x20-\x7F\r\n]'
+        non_cr_lf = b'\r[^\n]|[^\r]\n'
+        trail_white = b'(?:\ \r|\ \n)'
+        end_of_file = b'\r\n$'
         files = os.listdir(self.mount_point)
         non_ascii_re = re.compile(non_ascii)
         non_cr_lf_re = re.compile(non_cr_lf)
@@ -417,6 +455,9 @@ class DaplinkBoard(object):
 
     def load_interface(self, filepath, parent_test):
         """Load an interface binary or hex"""
+        assert isinstance(filepath, str), "Invalid bootloader image!"
+        assert isinstance(parent_test, TestInfo), "Invalid parent test object!"
+
         test_info = parent_test.create_subtest('load_interface')
         self.set_mode(self.MODE_BL, test_info)
 
@@ -448,6 +489,9 @@ class DaplinkBoard(object):
 
     def load_bootloader(self, filepath, parent_test):
         """Load a bootloader binary or hex"""
+        assert isinstance(filepath, str), "Invalid bootloader image!"
+        assert isinstance(parent_test, TestInfo), "Invalid parent test object!"
+
         test_info = parent_test.create_subtest('load_bootloader')
         self.set_mode(self.MODE_IF, test_info)
 
@@ -478,28 +522,57 @@ class DaplinkBoard(object):
         if data_crc != details_crc:
             test_info.failure("Bootloader CRC is wrong")
 
-    def wait_for_remount(self, parent_test, wait_time=120):
+    def wait_for_remount(self, parent_test, wait_time=600):
+        mode = self._mode
+        count = self._remount_count
         test_info = parent_test.create_subtest('wait_for_remount')
+        
         elapsed = 0
         start = time.time()
+        remounted = False
         while os.path.isdir(self.mount_point):
+            if self.update_board_info(False): #check info if it is already mounted
+                if mode is not None and self._mode is not None and mode is not self._mode:
+                    remounted = True
+                    test_info.info("already remounted with change mode")
+                    break
+                elif count is not None and self._remount_count is not None and count != self._remount_count:
+                        remounted = True
+                        test_info.info("already remounted with change mount count")
+                        break 
             if elapsed > wait_time:
                 raise Exception("Dismount timed out")
             time.sleep(0.1)
-            elapsed += 0.1
-        stop = time.time()
-        test_info.info("unmount took %s s" % (stop - start))
+            elapsed += 0.2
+        else:
+            stop = time.time()
+            test_info.info("unmount took %s s" % (stop - start))
+        elapsed = 0
         start = time.time()
-        while True:
-            if self._update_board_info(False):
+
+        while not remounted:
+            if self.update_board_info(False):
                 if os.path.isdir(self.mount_point):
-                    break
+                    # Information returned by mbed-ls could be old.
+                    # Only break from the loop if the second call to
+                    # mbed-ls returns the same mount point.
+                    tmp_mount = self.mount_point
+                    if self.update_board_info(False):
+                        if tmp_mount == self.mount_point:
+                            break
             if elapsed > wait_time:
                 raise Exception("Mount timed out")
             time.sleep(0.1)
             elapsed += 0.1
         stop = time.time()
         test_info.info("mount took %s s" % (stop - start))
+
+        if count is not None and self._remount_count is not None:
+            expected_count = (0 if mode is not self._mode
+                              else (count + 1) & 0xFFFFFFFF)
+            if expected_count != self._remount_count:
+                    test_info.failure('Expected remount count of %s got %s' %
+                                      (expected_count, self._remount_count))
 
         # If enabled check the filesystem
         if self._check_fs_on_remount:
@@ -512,7 +585,7 @@ class DaplinkBoard(object):
                                       (self._assert.line, self._assert.file))
                 self.clear_assert()
 
-    def _update_board_info(self, exptn_on_fail=True):
+    def update_board_info(self, exptn_on_fail=True):
         """Update board info
 
         Update all board information variables that could
@@ -520,50 +593,52 @@ class DaplinkBoard(object):
         Note - before this function is set self.unique_id
         must be set.
         """
-        endpoints = _get_board_endpoints(self.unique_id)
-        if endpoints is None:
-            if exptn_on_fail:
-                raise Exception("Could not update board info: %s" %
-                                self.unique_id)
-            return False
-        self.unique_id, self.serial_port, self.mount_point = endpoints
-        # Serial port can be missing
-        if self.unique_id is None:
-            if exptn_on_fail:
-                raise Exception("Mount point is null")
-            return False
-        if self.mount_point is None:
-            if exptn_on_fail:
-                raise Exception("Mount point is null")
-            return False
-        self.board_id = int(self.unique_id[0:4], 16)
-        self._hic_id = int(self.unique_id[-8:], 16)
 
-        # Note - Some legacy boards might not have details.txt
-        details_txt_path = self.get_file_path("details.txt")
-        self.details_txt = _parse_kvp_file(details_txt_path)
-        self._parse_assert_txt()
+        try:
+            endpoints = _get_board_endpoints(self.unique_id)
+            if endpoints is None:
+                if exptn_on_fail:
+                    raise Exception("Could not update board info: %s" %
+                                    self.unique_id)
+                return False
+            self.unique_id, self.serial_port, self.mount_point = endpoints
+            # Serial port can be missing
+            if self.unique_id is None:
+                if exptn_on_fail:
+                    raise Exception("Mount point is null")
+                return False
+            if self.mount_point is None:
+                if exptn_on_fail:
+                    raise Exception("Mount point is null")
+                return False
+            self.board_id = int(self.unique_id[0:4], 16)
+            self._hic_id = int(self.unique_id[-8:], 16)
 
-        self.mode = None
-        if DaplinkBoard.KEY_MODE in self.details_txt:
-            DETAILS_TO_MODE = {
-                "interface": DaplinkBoard.MODE_IF,
-                "bootloader": DaplinkBoard.MODE_BL,
-            }
-            mode_str = self.details_txt[DaplinkBoard.KEY_MODE]
-            self._mode = DETAILS_TO_MODE[mode_str]
-        else:
-            # TODO - remove file check when old bootloader have been
-            # updated
-            check_bl_path = self.get_file_path('HELP_FAQ.HTM')
-            check_if_path = self.get_file_path('MBED.HTM')
-            if os.path.isfile(check_bl_path):
-                self._mode = self.MODE_BL
-            elif os.path.isfile(check_if_path):
-                self._mode = self.MODE_IF
+            # Note - Some legacy boards might not have details.txt
+            details_txt_path = self.get_file_path("details.txt")
+            self.details_txt = _parse_kvp_file(details_txt_path)
+            self._parse_assert_txt()
+
+            self._remount_count = None
+            if DaplinkBoard.KEY_REMOUNT_COUNT in self.details_txt:
+                self._remount_count = int(self.details_txt[DaplinkBoard.KEY_REMOUNT_COUNT])
+            self._mode = None
+            if DaplinkBoard.KEY_MODE in self.details_txt:
+                DETAILS_TO_MODE = {
+                    "interface": DaplinkBoard.MODE_IF,
+                    "bootloader": DaplinkBoard.MODE_BL,
+                }
+                mode_str = self.details_txt[DaplinkBoard.KEY_MODE]
+                self._mode = DETAILS_TO_MODE[mode_str]
             else:
-                raise Exception("Could not determine board mode!")
-        return True
+                #check for race condition here
+                return False
+            return True
+        except Exception as e:
+            if exptn_on_fail:
+                raise e
+            else:
+                return False
 
     def test_details_txt(self, parent_test):
         """Check that details.txt has all requied fields"""

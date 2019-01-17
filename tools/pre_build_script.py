@@ -53,47 +53,51 @@ VERSION_GIT_FILE_TEMPLATE = """
 """
 
 
-GIT_VERSION_FILE_PATH = "../../../source/daplink/version_git.h"
 
-def pre_build():
-    print "#> Pre-build script start"
+def generate_version_file(version_git_dir):
 
-    # First thing to do is delete any existing generated files.
-    try:
-        os.remove(GIT_VERSION_FILE_PATH)
-        print "#> Old git version file removed"
-    except OSError:
-        print "#> No git version file to remove"
-        pass
+    output_file = os.path.join(os.path.normpath(version_git_dir),'version_git.h')
+    print("#> Pre-build script start")
 
     # Get the git SHA.
-    print "#> Getting git SHA"
+    print("#> Getting git SHA")
     try:
         git_sha = check_output("git rev-parse --verify HEAD", shell=True)
-        git_sha = git_sha.strip()
+        git_sha = git_sha.decode().strip()
     except:
-        print "#> ERROR: Failed to get git SHA, do you have git.exe in your PATH environment variable?"
+        print("#> ERROR: Failed to get git SHA, do you have git.exe in your PATH environment variable?")
         return 1
 
     # Check are there any local, uncommitted modifications.
-    print "#> Checking for local changes"
+    print("#> Checking for local changes")
     try:
         check_output("git diff --no-ext-diff --quiet --exit-code", shell=True)
-    except CalledProcessError, WindowsError:
+    except (CalledProcessError, OSError):
         git_has_changes = 1
     else:
         git_has_changes = 0
 
 
-    #Create the version file.
-    print "#> Creating new git version file"
-    version_file = open(GIT_VERSION_FILE_PATH, 'a')
-    version_file.write(VERSION_GIT_FILE_TEMPLATE % (git_sha, git_has_changes))
-    version_file.close()
+    # Create the version file. Only overwrite an existing file if it changes.
+    version_text = VERSION_GIT_FILE_TEMPLATE % (git_sha, git_has_changes)
+    try:
+        with open(output_file, 'r') as version_file:
+            current_version_text = version_file.read()
+    except IOError:
+        current_version_text = ''
+    if version_text != current_version_text:
+        print("#> Writing git version file")
+        with open(output_file, 'w+') as version_file:
+            version_file.write(version_text)
+    else:
+        print("#> Keeping git version file since it didn't need to change")
 
-    print "#> Pre-build script completed"
+    print("#> Pre-build script completed written %s" % output_file )
 
     return 0
 
 if __name__ == "__main__":
-    exit(pre_build())
+    parser = argparse.ArgumentParser(description='git version generator')
+    parser.add_argument("--version_git_dir", type=str, default='../../../source/daplink/', help="directory to output version_git.h file")
+    args = parser.parse_args()
+    exit(generate_version_file(args.version_git_dir))

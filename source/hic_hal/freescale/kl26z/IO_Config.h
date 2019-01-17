@@ -19,6 +19,13 @@
  * limitations under the License.
  */
 
+// Override all defines if IO_CONFIG_OVERRIDE is defined
+#ifdef IO_CONFIG_OVERRIDE
+#include "IO_Config_Override.h"
+#ifndef __IO_CONFIG_H__
+#define __IO_CONFIG_H__
+#endif
+#endif
 
 #ifndef __IO_CONFIG_H__
 #define __IO_CONFIG_H__
@@ -88,6 +95,12 @@ COMPILER_ASSERT(DAPLINK_HIC_ID == DAPLINK_HIC_ID_KL26);
 #define PIN_SW_RESET_GPIO       PTB
 #define PIN_SW_RESET_BIT        (1)
 #define PIN_SW_RESET            (1<<PIN_SW_RESET_BIT)
+
+// BOARD TYPE
+#define PIN_BOARD_TYPE_PORT     PORTB
+#define PIN_BOARD_TYPE_GPIO     PTB
+#define PIN_BOARD_TYPE_BIT      (0)
+#define PIN_BOARD_TYPE          (1<<PIN_BOARD_TYPE_BIT)
 
 // Connected LED                Not available
 

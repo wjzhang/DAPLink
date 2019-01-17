@@ -53,6 +53,7 @@ Output
 Lst
 Obj
 build
+targetfw
 
 # cscope
 cscope.*
@@ -70,7 +71,9 @@ debug.txt
 
 # virtualenv
 env/
+env*/
 venv/
+venv*/
 
 # release
 uvision_release/
@@ -80,3 +83,9 @@ source/daplink/version_git.h
 
 #Misc
 .DS_Store
+
+# automated test results
+test_results
+
+#vscode editor
+.vscode

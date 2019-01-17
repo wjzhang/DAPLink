@@ -44,7 +44,7 @@ const program_target_t stm32l486_flash = {
     0x20000051, // EraseChip
     0x2000008D, // EraseSector
     0x200000E9, // ProgramPage
-
+    0x00000000, // verify
     // RSB : base adreess is address of Execution Region PrgData in map file
     //       to access global/static data
     // RSP : Initial stack pointer
