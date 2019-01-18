@@ -41,7 +41,7 @@ import time
 import requests
 import logging
 
-MBED_API_SERVER = 'https://developer.mbed.org'
+MBED_API_SERVER = 'https://os.mbed.com/'
 
 
 def build_repo(user, password, repo, platform, destdir,
@@ -59,7 +59,7 @@ def build_repo(user, password, repo, platform, destdir,
         for pair in replace:
             dest = pair.split(':')[0]
             src = pair.split(':')[1]
-            print dest
+            print(dest)
             cwd = os.getcwd()
             srcfile = open(os.path.join(cwd, src), 'r')
             replace.append({dest: srcfile.read()})
@@ -130,6 +130,8 @@ def build_repo(user, password, repo, platform, destdir,
                 fd.write(chunk)
 
         logging.info("Finished!")
+    else:
+        raise Exception("Failed to build platform %s" % platform)
     return destination
 
 if __name__ == "__main__":

@@ -40,7 +40,7 @@ const program_target_t NRF51_flash = {
     0x20000029, // EraseChip
     0x20000049, // EraseSector
     0x20000071, // ProgramPage
-
+    0x00000000, // verify
     // RSB : base adreess is address of Execution Region PrgData in map file
     //       to access global/static data
     // RSP : Initial stack pointer

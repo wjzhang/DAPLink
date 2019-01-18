@@ -93,6 +93,20 @@ Provides definitions about:
 /// setting can be reduced (valid range is 1 .. 255). Change setting to 4 for High-Speed USB.
 #define DAP_PACKET_COUNT        1              ///< Buffers: 64 = Full-Speed, 4 = High-Speed.
 
+/// Indicate that UART Serial Wire Output (SWO) trace is available.
+/// This information is returned by the command \ref DAP_Info as part of <b>Capabilities</b>.
+#define SWO_UART                0               ///< SWO UART:  1 = available, 0 = not available
+
+/// Maximum SWO UART Baudrate
+#define SWO_UART_MAX_BAUDRATE   10000000U       ///< SWO UART Maximum Baudrate in Hz
+
+/// Indicate that Manchester Serial Wire Output (SWO) trace is available.
+/// This information is returned by the command \ref DAP_Info as part of <b>Capabilities</b>.
+#define SWO_MANCHESTER          0               ///< SWO Manchester:  1 = available, 0 = not available
+
+/// SWO Trace Buffer Size.
+#define SWO_BUFFER_SIZE         4096U           ///< SWO Trace Buffer Size in bytes (must be 2^n)
+
 /// Debug Unit is connected to fixed Target Device.
 /// The Debug Unit may be part of an evaluation board and always connected to a fixed
 /// known device.  In this case a Device Vendor and Device Name string is stored which
@@ -166,11 +180,17 @@ Configures the DAP Hardware I/O pins for Serial Wire Debug (SWD) mode:
 */
 static __inline void PORT_SWD_SETUP(void)
 {
-    LPC_GPIO->CLR[PIN_SWCLK_PORT] = PIN_SWCLK;
+    LPC_GPIO->SET[PIN_SWCLK_PORT] = PIN_SWCLK;
     LPC_GPIO->SET[PIN_SWDIO_PORT] = PIN_SWDIO;
+#if !defined(PIN_nRESET_FET_DRIVE)
     // open drain logic
     LPC_GPIO->DIR[PIN_nRESET_PORT] &= ~PIN_nRESET;
     LPC_GPIO->CLR[PIN_nRESET_PORT] = PIN_nRESET;
+#else
+    // FET drive logic
+    LPC_GPIO->DIR[PIN_nRESET_PORT] |= PIN_nRESET;
+    LPC_GPIO->CLR[PIN_nRESET_PORT] = PIN_nRESET;
+#endif
     LPC_GPIO->DIR[PIN_SWCLK_PORT] |= PIN_SWCLK;
     LPC_GPIO->DIR[PIN_SWDIO_PORT] |= PIN_SWDIO;
 }
@@ -182,11 +202,22 @@ Disables the DAP Hardware I/O pins which configures:
 static __inline void PORT_OFF(void)
 {
     LPC_GPIO->CLR[PIN_SWCLK_PORT] = PIN_SWCLK;
-    LPC_GPIO->SET[PIN_SWDIO_PORT] = PIN_SWDIO;    
+    LPC_GPIO->SET[PIN_SWDIO_PORT] = PIN_SWDIO;
+#if !defined(PIN_nRESET_FET_DRIVE)
+    // open drain logic
     LPC_GPIO->DIR[PIN_nRESET_PORT] &= ~PIN_nRESET;
+#else
+    // FET drive logic
+    LPC_GPIO->DIR[PIN_nRESET_PORT] |= PIN_nRESET;
     LPC_GPIO->CLR[PIN_nRESET_PORT] = PIN_nRESET;
-    LPC_GPIO->DIR[PIN_SWCLK_PORT] |= PIN_SWCLK;
-    LPC_GPIO->DIR[PIN_SWDIO_PORT] |= PIN_SWDIO;
+#endif
+    LPC_GPIO->DIR[PIN_SWCLK_PORT] &= ~PIN_SWCLK;
+    LPC_GPIO->DIR[PIN_SWDIO_PORT] &= ~PIN_SWDIO;
+
+#if defined(TARGET_POWER_HOLD)
+    //Release Target PowerHold
+    LPC_GPIO->CLR[PIN_PWH_PORT] = PIN_PWH;
+#endif
 }
 
 
@@ -367,12 +398,21 @@ static __forceinline uint32_t PIN_nRESET_IN(void)
 */
 static __forceinline void     PIN_nRESET_OUT(uint32_t bit)
 {
+#if !defined(PIN_nRESET_FET_DRIVE)
     // open drain logic
     if (bit) {
         LPC_GPIO->DIR[PIN_nRESET_PORT] &= ~PIN_nRESET;    // input (pulled high external)
     } else {
         LPC_GPIO->DIR[PIN_nRESET_PORT] |=  PIN_nRESET;    // output (low)
     }
+#else
+    // FET drive logic
+    if (bit) {
+        LPC_GPIO->CLR[PIN_nRESET_PORT] = (PIN_nRESET);
+    } else {
+        LPC_GPIO->SET[PIN_nRESET_PORT] = (PIN_nRESET);
+    }
+#endif
 }
 
 ///@}
@@ -433,12 +473,12 @@ Status LEDs. In detail the operation of Hardware I/O and LED pins are enabled an
 static __inline void DAP_SETUP(void)
 {
     // Configure I/O pins
-    PIN_SWCLK_TCK_IOCON |= PIN_SWCLK_TCK_IOCON_INIT;  // SWCLK/TCK
-    PIN_SWDIO_TMS_IOCON |= PIN_SWDIO_TMS_IOCON_INIT;  // SWDIO/TMS
-    PIN_nRESET_IOCON    |= PIN_nRESET_IOCON_INIT;        // nRESET
+    PIN_SWCLK_TCK_IOCON = PIN_SWCLK_TCK_IOCON_INIT;  // SWCLK/TCK
+    PIN_SWDIO_TMS_IOCON = PIN_SWDIO_TMS_IOCON_INIT;  // SWDIO/TMS
+    PIN_nRESET_IOCON    = PIN_nRESET_IOCON_INIT;        // nRESET
 #if (DAP_JTAG != 0)
-    PIN_TDI_IOCON       |= PIN_TDI_IOCON_INIT;  // TDI
-    PIN_TDO_IOCON       |= PIN_TDO_IOCON_INIT;  // TDO
+    PIN_TDI_IOCON       = PIN_TDI_IOCON_INIT;  // TDI
+    PIN_TDO_IOCON       = PIN_TDO_IOCON_INIT;  // TDO
 #endif
 }
 

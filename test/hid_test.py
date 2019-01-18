@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
- 
+
 from __future__ import absolute_import
 
 from time import sleep
@@ -44,7 +44,7 @@ def test_hid(workspace, parent_test):
         ram_region = ram_regions[0]
         rom_region = memory_map.getBootMemory()
 
-        addr = ram_region.start + 1
+        addr = ram_region.start + 4
         size = 0x502
         addr_bin = rom_region.start
         addr_flash = rom_region.start + rom_region.length // 2

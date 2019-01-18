@@ -30,7 +30,7 @@ static inline uint32_t test_range(const uint32_t test, const uint32_t min, const
     return ((test < min) || (test > max)) ? 0 : 1;
 }
 
-uint8_t validate_bin_nvic(const uint8_t *buf)
+__weak uint8_t validate_bin_nvic(const uint8_t *buf)
 {
     // test for known required NVIC entries
     //  00 is stack pointer (RAM address)
@@ -38,31 +38,53 @@ uint8_t validate_bin_nvic(const uint8_t *buf)
     //  08 NMI_Handler      (FLASH address)
     //  12 HardFault_Handler(FLASH address)
     uint32_t i = 4, nvic_val = 0;
+    uint8_t index = 0, in_range = 0;
     // test the initial SP value
     memcpy(&nvic_val, buf + 0, sizeof(nvic_val));
-    
-    if (targetID == Target_UNKNOWN)
+
+    if (targetID == Target_UNKNOWN) {
         return 0;
+	}
 
     if (0 == test_range(nvic_val, target_device[targetID].ram_start, target_device[targetID].ram_end)) {
-        return 0;
+        while (!(target_device[targetID].extra_ram[index].start == 0 && target_device[targetID].extra_ram[index].end == 0)) { //try additional reqions if present
+            if (1 == test_range(nvic_val, target_device[targetID].extra_ram[index].start, target_device[targetID].extra_ram[index].end)) {
+                in_range = 1;
+                break;
+            }
+            index++;
+        }
+        if (in_range == 0) {
+            return 0;
+        }
     }
+    
+    
 
     // Reset_Handler
     // NMI_Handler
     // HardFault_Handler
     for (; i <= 12; i += 4) {
         memcpy(&nvic_val, buf + i, sizeof(nvic_val));
-
         if (0 == test_range(nvic_val, target_device[targetID].flash_start, target_device[targetID].flash_end)) {
-            return 0;
+            index = 0, in_range = 0;
+            while (!(target_device[targetID].extra_flash[index].start == 0 && target_device[targetID].extra_flash[index].end == 0)) { //try additional reqions if present
+                if (1 == test_range(nvic_val, target_device[targetID].extra_flash[index].start, target_device[targetID].extra_flash[index].end)) {
+                    in_range = 1;
+                    break;
+                }
+                index++;
+            }
+            if (in_range == 0) {
+                return 0;
+            }
         }
     }
 
     return 1;
 }
 
-uint8_t validate_hexfile(const uint8_t *buf)
+__weak uint8_t validate_hexfile(const uint8_t *buf)
 {
     // look here for known hex records
     // add hex identifier b[0] == ':' && b[8] == {'0', '2', '3', '4', '5'}

@@ -46,7 +46,7 @@ const program_target_t stm32f405_flash = {
     0x20000073, // EraseChip
     0x200000B3, // EraseSector
     0x20000105, // ProgramPage
-
+    0x00000000, // verify
     // RSB : base adreess is address of Execution Region PrgData in map file
     //       to access global/static data
     // RSP : Initial stack pointer
