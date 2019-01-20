@@ -178,7 +178,7 @@ uint32_t DAP_ProcessVendorCommand(const uint8_t *request, uint8_t *response) {
             uint8_t targetID = swd_init_get_target_no_resetandhalt();
             *response++ = 1;
             *response++ = targetID;
-            num += 2;
+            num += (0 << 16) | 2;
         }
         break;
     case ID_DAP_Vendor29:
@@ -187,7 +187,7 @@ uint32_t DAP_ProcessVendorCommand(const uint8_t *request, uint8_t *response) {
             read_unique_id(fullUniqueId);
             *response++ = 16;
             memcpy(response, (uint8_t *)fullUniqueId, 16);
-            num += 17;
+            num += (0 << 16) | 17;
         }
         break;
     case ID_DAP_Vendor30:
@@ -196,7 +196,7 @@ uint32_t DAP_ProcessVendorCommand(const uint8_t *request, uint8_t *response) {
             *response++ = 2;
             *response++ =  value       & 0xFF;
             *response++ = (value >> 8) & 0xFF;
-            num += 3;
+            num += (0 << 16) | 3;
         }
         break;
     case ID_DAP_Vendor31:

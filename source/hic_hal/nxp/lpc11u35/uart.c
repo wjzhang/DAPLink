@@ -41,7 +41,7 @@ uint8_t write_buffer_data[BUFFER_SIZE];
 circ_buf_t read_buffer;
 uint8_t read_buffer_data[BUFFER_SIZE];
 
-static uint8_t flow_control_enabled = 0;
+//static uint8_t flow_control_enabled = 0;
 
 static int32_t reset(void);
 
@@ -61,10 +61,7 @@ int32_t uart_initialize(void)
 	if(gpio_get_config(PIN_CONFIG_DT01) == PIN_HIGH) {	
         LPC_IOCON->PIO0_7  = 0x11; // CTS
         LPC_IOCON->PIO0_17 = 0x11; // RTS
-        flow_control_enabled = 1; // true
-	} else {
-        flow_control_enabled = 0; // false
-    } 
+    }
     // enable FIFOs (trigger level 1) and clear them
     LPC_USART->FCR = 0x87;
     // Transmit Enable
@@ -277,11 +274,16 @@ int32_t uart_get_configuration(UART_Configuration *config)
     }
 
     // get flow control
-    if (flow_control_enabled) {
-    	config->FlowControl = UART_FLOW_CONTROL_RTS_CTS;
-    }
-    else {
-    	config->FlowControl = UART_FLOW_CONTROL_NONE;
+//    if (flow_control_enabled) {
+//    	config->FlowControl = UART_FLOW_CONTROL_RTS_CTS;
+//    }
+//    else {
+//    	config->FlowControl = UART_FLOW_CONTROL_NONE;
+//    }
+    if(gpio_get_config(PIN_CONFIG_DT01) == PIN_HIGH) {
+        config->FlowControl = UART_FLOW_CONTROL_RTS_CTS;
+    } else {
+        config->FlowControl = UART_FLOW_CONTROL_NONE;
     }
     return 1;
 }
