@@ -38,7 +38,8 @@ static const daplink_info_t *const info_if = (daplink_info_t *)(DAPLINK_ROM_IF_S
 
 // Raw variables
 static uint8_t  host_id_sha256[32];
-static uint32_t host_id[5] = {0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x4E58504C}; // first 4 worod lpc11u35 unique ID, latest: "NXPL"
+static uint8_t  id_sha256_buffer[8 + 16] = {'L', 'P', 'C', '1', '1', 'U', '3', '5'};
+static uint32_t host_id[4] = {0x00000000, 0x00000000, 0x00000000, 0x00000000};
 static uint32_t target_id[4];
 static uint32_t hic_id = DAPLINK_HIC_ID;
 
@@ -167,7 +168,8 @@ void info_init(void)
 {
     info_crc_compute();
     read_unique_id(host_id);
-    calc_sha_256(host_id_sha256, (const void *)host_id, 20);
+    memcpy(id_sha256_buffer + 8, host_id, 16);
+    calc_sha_256(host_id_sha256, (const void *)id_sha256_buffer, 8 + 16);
     setup_basics();
     setup_unique_id();
     setup_string_descriptor();

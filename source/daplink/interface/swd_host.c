@@ -1070,6 +1070,55 @@ uint8_t swd_init_get_target_no_resetandhalt(void)
     return get_target_id(tmpid);
 }
 
+uint32_t swd_get_target_uniqueid(uint32_t *pbuffer, uint32_t len)
+{
+     uint32_t idaddress = 0;
+     uint32_t data = 0;
+     uint32_t size = 0;
+     uint8_t targetMCU =  swd_init_get_target_no_resetandhalt();
+     switch (targetMCU) {
+         case Target_NRF51822:
+         case Target_NRF52832:
+             idaddress = 0x10000000 + 0x060;
+             size = 2;
+             break;
+         
+         case Target_STM32F031:
+         case Target_STM32F051:
+         case Target_STM32F071:
+         case Target_STM32F301K8:             
+             idaddress = 0x1FFFF7AC;
+             size = 3;
+             break;
+         
+         case Target_STM32F103:
+             idaddress = 0x1FFFF7E8;
+             size = 3;
+             break;
+         
+         case Target_STM32F405:
+             idaddress = 0x1FFF7A10;
+             size = 3;
+             break;
+         
+         case Target_STM32L486:
+             idaddress = 0x1FFF7590;
+             size = 3;
+             break;
+         
+         case Target_UNKNOWN:
+         default:
+             return 0;
+             //break;            
+     }
+     // read unique id
+     for(uint32_t i = 0; i < size; i++) {
+            swd_read_word(idaddress + i * 4, &data);
+            *pbuffer++ = data; 
+     }
+     return size;
+}
+
 __attribute__((weak)) void swd_set_target_reset(uint8_t asserted)
 {
     (asserted) ? PIN_nRESET_OUT(0) : PIN_nRESET_OUT(1);
