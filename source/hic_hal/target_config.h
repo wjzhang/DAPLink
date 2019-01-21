@@ -77,6 +77,7 @@ extern const target_cfg_t target_device[];
 extern uint8_t targetID;
 uint8_t swd_init_get_target(void);
 uint8_t swd_init_get_target_no_resetandhalt(void);
+uint32_t swd_get_target_uniqueid(uint32_t *pbuffer, uint32_t len);
 
 #ifdef __cplusplus
 }
