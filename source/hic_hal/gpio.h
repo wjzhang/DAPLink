@@ -1,6 +1,6 @@
 /**
  * @file    gpio.h
- * @brief   
+ * @brief
  *
  * DAPLink Interface Firmware
  * Copyright (c) 2009-2016, ARM Limited, All Rights Reserved
@@ -27,7 +27,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-    
+
 enum
 {
 	PIN_CONFIG_DT01 = 0,
@@ -49,13 +49,21 @@ typedef enum led_state {
 } gpio_led_state_t;
 
 void gpio_init(void);
+void gpio_set_board_power(bool powerEnabled);
 void gpio_set_hid_led(gpio_led_state_t state);
 void gpio_set_cdc_led(gpio_led_state_t state);
-uint8_t gpio_get_sw_reset(void);
+//void gpio_set_msc_led(gpio_led_state_t state);
+uint8_t gpio_get_reset_btn_no_fwrd(void);
+uint8_t gpio_get_reset_btn_fwrd(void);
 
+uint8_t gpio_get_sw_reset(void);
 uint8_t gpio_get_config(uint8_t cfgid);
 uint16_t gpio_all_pins(void);
 
+static inline uint8_t gpio_get_reset_btn(void)
+{
+    return gpio_get_reset_btn_no_fwrd() || gpio_get_reset_btn_fwrd();
+}
 
 #ifdef __cplusplus
 }

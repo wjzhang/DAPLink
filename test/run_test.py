@@ -29,6 +29,8 @@ optional arguments:
                         Directory with firmware images to test
   --firmware {k20dx_k64f_if,lpc11u35_sscity_if,...} (run script with --help to see full list)
                         Firmware to test
+  --project-tool TOOL    choices=['uvision', 'mbedcli'],'Tool used to compile the project',
+                        default='uvision'
   --logdir LOGDIR       Directory to log test results to
   --noloadif            Skip load step for interface.
   --notestendpt         Dont test the interface USB endpoints.
@@ -67,6 +69,7 @@ from enum import Enum
 from hid_test import test_hid
 from serial_test import test_serial
 from msd_test import test_mass_storage
+from usb_test import test_usb
 from daplink_board import get_all_attached_daplink_boards
 from project_generator.generate import Generator
 from test_info import TestInfo
@@ -91,6 +94,7 @@ def test_endpoints(workspace, parent_test):
     test_hid(workspace, test_info)
     test_serial(workspace, test_info)
     test_mass_storage(workspace, test_info)
+    test_usb(workspace, test_info)
 
 
 class TestConfiguration(object):
@@ -221,14 +225,14 @@ class TestManager(object):
                            test_configuration.bl_firmware)
             test_info.info("Target: %s" % test_configuration.target)
 
-            if self._load_if:
-                if_path = test_configuration.if_firmware.hex_path
-                board.load_interface(if_path, test_info)
-
             valid_bl = test_configuration.bl_firmware is not None
             if self._load_bl and valid_bl:
                 bl_path = test_configuration.bl_firmware.hex_path
                 board.load_bootloader(bl_path, test_info)
+
+            if self._load_if:
+                if_path = test_configuration.if_firmware.hex_path
+                board.load_interface(if_path, test_info)
 
             board.set_check_fs_on_remount(True)
 
@@ -528,6 +532,9 @@ def main():
     parser.add_argument('--firmwaredir',
                         help='Directory with firmware images to test',
                         default=None)
+    parser.add_argument('--project-tool', choices=['uvision', 'mbedcli'],
+                        help='Tool used to compile the project',
+                        default='uvision')
     parser.add_argument('--firmware', help='Firmware to test', action='append',
                         choices=firmware_choices, default=[], required=False)
     parser.add_argument('--logdir', help='Directory to log test results to',
@@ -597,7 +604,7 @@ def main():
 
     # Get all relevant info
     if args.firmwaredir is None:
-        firmware_bundle = load_bundle_from_project()
+        firmware_bundle = load_bundle_from_project(args.project_tool)
     else:
         firmware_bundle = load_bundle_from_release(args.firmwaredir)
 

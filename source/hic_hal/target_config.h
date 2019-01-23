@@ -40,6 +40,15 @@ extern "C" {
 // This can vary from target to target and should be in the structure or flash blob
 #define TARGET_AUTO_INCREMENT_PAGE_SIZE    (1024)
 
+//Additional flash and ram regions
+#define MAX_EXTRA_FLASH_REGION                3
+#define MAX_EXTRA_RAM_REGION                  3
+
+typedef struct region_info {
+    uint32_t start;
+    uint32_t end;
+} region_info_t;
+
 /**
  @struct target_cfg_t
  @brief  The firmware configuration struct has unique about the chip its running on.
@@ -53,18 +62,22 @@ typedef struct target_cfg {
     uint32_t ram_end;               /*!< Highest contigous RAM address the application uses */
     program_target_t *flash_algo;   /*!< A pointer to the flash algorithm structure */
     uint8_t erase_reset;            /*!< Reset after performing an erase */
-    
+    const sector_info_t* sectors_info; 
+    int sector_info_length;
+    region_info_t extra_flash[MAX_EXTRA_FLASH_REGION + 1]; //!< Extra flash regions.
+    region_info_t extra_ram[MAX_EXTRA_RAM_REGION + 1]; //!< Extra RAM regions.
+
     uint32_t (*get_sector_number)(uint32_t addr);  // convert flash address to sector number
     uint32_t (*get_sector_address)(uint32_t sector);  //convert sector number to flash address
     uint32_t (*get_sector_length)(uint32_t sector);  //get sector size. (some device has difference sector size)
-    
+
 } target_cfg_t;
 
 extern const target_cfg_t target_device[];
 extern uint8_t targetID;
 uint8_t swd_init_get_target(void);
 uint8_t swd_init_get_target_no_resetandhalt(void);
-
+uint32_t swd_get_target_uniqueid(uint32_t *pbuffer, uint32_t len);
 
 #ifdef __cplusplus
 }

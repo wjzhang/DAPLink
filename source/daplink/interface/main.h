@@ -23,6 +23,7 @@
 #define MAIN_H
 
 #include "stdint.h"
+#include "stdbool.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -30,7 +31,8 @@ extern "C" {
 
 // LED state
 typedef enum main_led_state {
-    MAIN_LED_FLASH = 0,
+    MAIN_LED_DEF = 0,
+    MAIN_LED_FLASH,
     MAIN_LED_FLASH_PERMANENT
 } main_led_state_t;
 
@@ -43,22 +45,20 @@ typedef enum main_usb_connect {
     USB_DISCONNECTING
 } main_usb_connect_t;
 
-typedef enum main_reset_state {
-    MAIN_RESET_PRESSED = 0,
-    MAIN_RESET_RELEASED,
-    MAIN_RESET_TARGET
-} main_reset_state_t;
-
 void main_reset_target(uint8_t send_unique_id);
+void main_usb_set_test_mode(bool enabled);
 void main_usb_configure_event(void);
 void main_usb_busy_event(void);
 void main_powerdown_event(void);
 void main_disable_debug_event(void);
+void main_hid_send_event(void);
+void main_cdc_send_event(void);
 void main_msc_disconnect_event(void);
 void main_msc_delay_disconnect_event(void);
 void main_force_msc_disconnect_event(void);
-void main_blink_hid_led(main_led_state_t permanent);
-void main_blink_cdc_led(main_led_state_t permanent);
+void main_blink_hid_led(main_led_state_t state);
+void main_blink_msc_led(main_led_state_t state);
+void main_blink_cdc_led(main_led_state_t state);
 
 #ifdef __cplusplus
 }

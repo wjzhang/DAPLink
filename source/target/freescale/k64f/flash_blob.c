@@ -61,13 +61,18 @@ static const uint32_t K64F_FLM[] = {
     0x00400000, 0x00800000, 0x01000000, 0x01000000, 0x40020004, 0x00000000,
 };
 
+static const sector_info_t sectors_info[] = {
+    {0x00000000, 0x00001000},
+ };
+
 static const program_target_t flash = {
     0x20000021, // Init
     0x20000049, // UnInit
     0x20000059, // EraseChip
     0x2000007D, // EraseSector
     0x200000AB, // ProgramPage
-
+    0x0,        // Verify
+    
     // breakpoint = RAM start + 1
     // RSB : base address is address of Execution Region PrgData in map file
     //       to access global/static data

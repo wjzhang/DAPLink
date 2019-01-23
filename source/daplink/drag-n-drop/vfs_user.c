@@ -30,11 +30,11 @@
 #include "settings.h"
 #include "target_reset.h"
 #include "daplink.h"
-#include "IO_Config.h"      // for NVIC_SystemReset
 #include "version_git.h"
 #include "info.h"
 #include "gpio.h"           // for gpio_get_sw_reset
 #include "flash_intf.h"     // for flash_intf_target
+#include "cortex_m.h"
 
 // Must be bigger than 4x the flash size of the biggest supported
 // device.  This is to accomodate for hex file programming.
@@ -55,12 +55,16 @@ static const uint32_t disc_size = MB(64);
 //    "</body>\r\n"
 //    "</html>\r\n";
 
+static const char error_prefix[] = "error: ";
+static const char error_type_prefix[] = "type: ";
+
 static const vfs_filename_t assert_file = "ASSERT  TXT";
 
 static uint8_t file_buffer[VFS_SECTOR_SIZE];
 static char assert_buf[64 + 1];
 static uint16_t assert_line;
 static assert_source_t assert_source;
+static uint32_t remount_count;
 
 static uint32_t get_file_size(vfs_read_cb_t read_func);
 
@@ -70,9 +74,13 @@ static uint32_t read_file_fail_txt(uint32_t sector_offset, uint8_t *data, uint32
 static uint32_t read_file_assert_txt(uint32_t sector_offset, uint8_t *data, uint32_t num_sectors);
 static uint32_t read_file_need_bl_txt(uint32_t sector_offset, uint8_t *data, uint32_t num_sectors);
 
-//static void insert(uint8_t *buf, uint8_t *new_str, uint32_t strip_count);
-//static void update_html_file(uint8_t *buf, uint32_t bufsize);
+//static uint32_t update_html_file(uint8_t *data, uint32_t datasize);
+static uint32_t update_details_txt_file(uint8_t *data, uint32_t datasize);
 static void erase_target(void);
+
+//static uint32_t expand_info(uint8_t *buf, uint32_t bufsize);
+
+#define ARRAY_SIZE(array) (sizeof(array) / sizeof(array[0]))
 
 void vfs_user_build_filesystem()
 {
@@ -120,7 +128,7 @@ void vfs_user_file_change_handler(const vfs_filename_t filename, vfs_file_change
 {
     // Allow settings to be changed if automation mode is
     // enabled or if the user is holding the reset button
-    bool btn_pressed = !gpio_get_sw_reset();
+    bool btn_pressed = gpio_get_reset_btn();
 
     if (!btn_pressed && !config_get_automation_allowed()) {
         return;
@@ -160,6 +168,12 @@ void vfs_user_file_change_handler(const vfs_filename_t filename, vfs_file_change
         } else if (!memcmp(filename, "ERASE   ACT", sizeof(vfs_filename_t))) {
             erase_target();
             vfs_mngr_fs_remount();
+        } else if (!memcmp(filename, "OVFL_ON CFG", sizeof(vfs_filename_t))) {
+            config_set_overflow_detect(true);
+            vfs_mngr_fs_remount();
+        } else if (!memcmp(filename, "OVFL_OFFCFG", sizeof(vfs_filename_t))) {
+            config_set_overflow_detect(false);
+            vfs_mngr_fs_remount();
         }
     }
 
@@ -176,13 +190,15 @@ void vfs_user_disconnecting()
 {
     // Reset if programming was successful  //TODO - move to flash layer
     if (daplink_is_bootloader() && (ERROR_SUCCESS == vfs_mngr_get_transfer_status())) {
-        NVIC_SystemReset();
+        SystemReset();
     }
 
     // If hold in bootloader has been set then reset after usb is disconnected
     if (daplink_is_interface() && config_ram_get_hold_in_bl()) {
-        NVIC_SystemReset();
+        SystemReset();
     }
+
+    remount_count++;
 }
 
 // Get the filesize from a filesize callback.
@@ -199,38 +215,174 @@ static uint32_t get_file_size(vfs_read_cb_t read_func)
 //    if (sector_offset != 0) {
 //        return 0;
 //    }
-//
-//    update_html_file(data, VFS_SECTOR_SIZE);
-//    return strlen((const char *)data);
+
+//    return update_html_file(data, VFS_SECTOR_SIZE);
 //}
 
 // File callback to be used with vfs_add_file to return file contents
 static uint32_t read_file_details_txt(uint32_t sector_offset, uint8_t *data, uint32_t num_sectors)
 {
-    uint32_t pos;
-    const char *mode_str;
+
+    if (sector_offset != 0) {
+        return 0;
+    }
+		
+    return update_details_txt_file(data, VFS_SECTOR_SIZE);
+}
+
+// Text representation of each error type, starting from the rightmost bit
+static const char* const error_type_names[] = {
+    "internal",
+    "transient",
+    "user",
+    "target",
+    "interface"
+};
+
+COMPILER_ASSERT(1 << ARRAY_SIZE(error_type_names) == ERROR_TYPE_MASK + 1);
+
+// File callback to be used with vfs_add_file to return file contents
+static uint32_t read_file_fail_txt(uint32_t sector_offset, uint8_t *data, uint32_t num_sectors)
+{
+    uint32_t size = 0;
     char *buf = (char *)data;
+    error_t status = vfs_mngr_get_transfer_status();
+    const char *contents = error_get_string(status);
+    error_type_t type = error_get_type(status);
 
     if (sector_offset != 0) {
         return 0;
     }
 
+    size += util_write_string(buf + size, error_prefix);
+    size += util_write_string(buf + size, contents);
+    size += util_write_string(buf + size, "\r\n");
+    size += util_write_string(buf + size, error_type_prefix);
+
+    // Write each applicable error type, separated by commas
+    int index = 0;
+    bool first = true;
+    while (type && index < ARRAY_SIZE(error_type_names)) {
+        if (!first) {
+            size += util_write_string(buf + size, ", ");
+        }
+        if (type & 1) {
+            size += util_write_string(buf + size, error_type_names[index]);
+            first = false;
+        }
+        index++;
+        type >>= 1;
+    }
+
+    size += util_write_string(buf + size, "\r\n");
+    return size;
+}
+
+// File callback to be used with vfs_add_file to return file contents
+static uint32_t read_file_assert_txt(uint32_t sector_offset, uint8_t *data, uint32_t num_sectors)
+{
+    uint32_t pos;
+    const char *source_str;
+    char *buf = (char *)data;
+    uint32_t * hexdumps = 0;
+    uint8_t valid_hexdumps = 0;
+    uint8_t index = 0;
+    
+    if (sector_offset != 0) {
+        return 0;
+    }
+
     pos = 0;
+
+    if (ASSERT_SOURCE_BL == assert_source) {
+        source_str = "Bootloader";
+    } else if (ASSERT_SOURCE_APP == assert_source) {
+        source_str = "Application";
+    } else {
+        source_str = 0;
+    }
+
+    pos += util_write_string(buf + pos, "Assert\r\n");
+    pos += util_write_string(buf + pos, "File: ");
+    pos += util_write_string(buf + pos, assert_buf);
+    pos += util_write_string(buf + pos, "\r\n");
+    pos += util_write_string(buf + pos, "Line: ");
+    pos += util_write_uint32(buf + pos, assert_line);
+    pos += util_write_string(buf + pos, "\r\n");
+
+    if (source_str != 0) {
+        pos += util_write_string(buf + pos, "Source: ");
+        pos += util_write_string(buf + pos, source_str);
+        pos += util_write_string(buf + pos, "\r\n");
+    }
+
+    valid_hexdumps = config_ram_get_hexdumps(&hexdumps);
+    if ((valid_hexdumps > 0) && (hexdumps != 0)) {
+        //print hexdumps
+        pos += util_write_string(buf + pos, "Hexdumps\r\n");
+        while ((index < valid_hexdumps) && ((pos + 10) < VFS_SECTOR_SIZE)) { //hexdumps + newline is always 10 characters
+            pos += util_write_hex32(buf + pos, hexdumps[index++]);
+            pos += util_write_string(buf + pos, "\r\n");
+        }
+    }
+    
+    return pos;
+}
+
+// File callback to be used with vfs_add_file to return file contents
+static uint32_t read_file_need_bl_txt(uint32_t sector_offset, uint8_t *data, uint32_t num_sectors)
+{
+    const char *contents = "A bootloader update was started but unable to complete.\r\n"
+                           "Reload the bootloader to fix this error message.\r\n";
+    uint32_t size = strlen(contents);
+
+    if (sector_offset != 0) {
+        return 0;
+    }
+
+    memcpy(data, contents, size);
+    return size;
+}
+
+
+//static uint32_t update_html_file(uint8_t *data, uint32_t datasize)
+//{		
+//    char *buf = (char *)data;
+//    //Needed by expand_info strlen
+//    memset(buf, 0, datasize);
+//    memcpy(buf, mbed_redirect_file, strlen(mbed_redirect_file));
+//    //expand
+//    return expand_info(data, datasize);
+//}
+
+static uint32_t update_details_txt_file(uint8_t *data, uint32_t datasize)
+{
+    uint32_t pos=0;
+    const char *mode_str;
+	
+    char *buf = (char *)data;
+		
+    //Needed by expand_info strlen
+    memset(buf, 0, datasize);
+		
     pos += util_write_string(buf + pos, "# DAPLink Firmware - see https://github.com/mesheven/DAPLink\r\n");
     // Unique ID
     pos += util_write_string(buf + pos, "Serial Number: ");
     pos += util_write_string(buf + pos, info_get_unique_id());
-    pos += util_write_string(buf + pos, "\r\n");
+    pos += util_write_string(buf + pos, "\r\n");    
     // HIC ID
     pos += util_write_string(buf + pos, "HIC ID: ");
     pos += util_write_string(buf + pos, info_get_hic_id());
-    pos += util_write_string(buf + pos, "\r\n");
+    pos += util_write_string(buf + pos, "\r\n");     
     // Settings
     pos += util_write_string(buf + pos, "Auto Reset: ");
     pos += util_write_string(buf + pos, config_get_auto_rst() ? "1" : "0");
     pos += util_write_string(buf + pos, "\r\n");
     pos += util_write_string(buf + pos, "Automation allowed: ");
     pos += util_write_string(buf + pos, config_get_automation_allowed() ? "1" : "0");
+    pos += util_write_string(buf + pos, "\r\n");
+    pos += util_write_string(buf + pos, "Overflow detection: ");
+    pos += util_write_string(buf + pos, config_get_overflow_detect() ? "1" : "0");
     pos += util_write_string(buf + pos, "\r\n");
     // Current mode
     mode_str = daplink_is_bootloader() ? "Bootloader" : "Interface";
@@ -241,7 +393,7 @@ static uint32_t read_file_details_txt(uint32_t sector_offset, uint8_t *data, uin
     pos += util_write_string(buf + pos, mode_str);
     pos += util_write_string(buf + pos, " Version: ");
     pos += util_write_string(buf + pos, info_get_version());
-    pos += util_write_string(buf + pos, "\r\n");
+    pos += util_write_string(buf + pos, "\r\n");    
 
     // Other builds version (bl or if)
     if (!daplink_is_bootloader() && info_get_bootloader_present()) {
@@ -275,6 +427,9 @@ static uint32_t read_file_details_txt(uint32_t sector_offset, uint8_t *data, uin
 #ifdef HID_ENDPOINT
     pos += util_write_string(buf + pos, ", HID");
 #endif
+#if (WEBUSB_INTERFACE)
+    pos += util_write_string(buf + pos, ", WebUSB");
+#endif
     pos += util_write_string(buf + pos, "\r\n");
 
     // CRC of the bootloader (if there is one)
@@ -288,109 +443,32 @@ static uint32_t read_file_details_txt(uint32_t sector_offset, uint8_t *data, uin
     pos += util_write_string(buf + pos, "Interface CRC: 0x");
     pos += util_write_hex32(buf + pos, info_get_crc_interface());
     pos += util_write_string(buf + pos, "\r\n");
+
+    // Number of remounts that have occurred
+    pos += util_write_string(buf + pos, "Remount count: ");
+    pos += util_write_uint32(buf + pos, remount_count);
+    pos += util_write_string(buf + pos, "\r\n");
+		
+    //Target URL
+//    pos += util_write_string(buf + pos, "URL: @R\r\n");
+    
+//    return expand_info(data, datasize);
     return pos;
 }
-
-// File callback to be used with vfs_add_file to return file contents
-static uint32_t read_file_fail_txt(uint32_t sector_offset, uint8_t *data, uint32_t num_sectors)
-{
-    const char *contents = (const char *)error_get_string(vfs_mngr_get_transfer_status());
-    uint32_t size = strlen(contents);
-
-    if (sector_offset != 0) {
-        return 0;
-    }
-
-    memcpy(data, contents, size);
-    data[size] = '\r';
-    size++;
-    data[size] = '\n';
-    size++;
-    return size;
-}
-
-// File callback to be used with vfs_add_file to return file contents
-static uint32_t read_file_assert_txt(uint32_t sector_offset, uint8_t *data, uint32_t num_sectors)
-{
-    uint32_t pos;
-    const char *source_str;
-    char *buf = (char *)data;
-
-    if (sector_offset != 0) {
-        return 0;
-    }
-
-    pos = 0;
-
-    if (ASSERT_SOURCE_BL == assert_source) {
-        source_str = "Bootloader";
-    } else if (ASSERT_SOURCE_APP == assert_source) {
-        source_str = "Application";
-    } else {
-        source_str = 0;
-    }
-
-    pos += util_write_string(buf + pos, "Assert\r\n");
-    pos += util_write_string(buf + pos, "File: ");
-    pos += util_write_string(buf + pos, assert_buf);
-    pos += util_write_string(buf + pos, "\r\n");
-    pos += util_write_string(buf + pos, "Line: ");
-    pos += util_write_uint32(buf + pos, assert_line);
-    pos += util_write_string(buf + pos, "\r\n");
-
-    if (source_str != 0) {
-        pos += util_write_string(buf + pos, "Source: ");
-        pos += util_write_string(buf + pos, source_str);
-        pos += util_write_string(buf + pos, "\r\n");
-    }
-
-    return pos;
-}
-
-// File callback to be used with vfs_add_file to return file contents
-static uint32_t read_file_need_bl_txt(uint32_t sector_offset, uint8_t *data, uint32_t num_sectors)
-{
-    const char *contents = "A bootloader update was started but unable to complete.\r\n"
-                           "Reload the bootloader to fix this error message.\r\n";
-    uint32_t size = strlen(contents);
-
-    if (sector_offset != 0) {
-        return 0;
-    }
-
-    memcpy(data, contents, size);
-    return size;
-}
-
-// Remove strip_count characters from the start of buf and then insert
-// new_str at the new start of buf.
-//static void insert(uint8_t *buf, uint8_t *new_str, uint32_t strip_count)
-//{
-//    uint32_t buf_len = strlen((const char *)buf);
-//    uint32_t str_len = strlen((const char *)new_str);
-//    // push out string
-//    memmove(buf + str_len, buf + strip_count, buf_len - strip_count);
-//    // insert
-//    memcpy(buf, new_str, str_len);
-//}
 
 // Fill buf with the contents of the mbed redirect file by
 // expanding the special characters in mbed_redirect_file.
-//static void update_html_file(uint8_t *buf, uint32_t bufsize)
+//static uint32_t expand_info(uint8_t *buf, uint32_t bufsize) 
 //{
-//    uint32_t size_left;
 //    uint8_t *orig_buf = buf;
 //    uint8_t *insert_string;
-//    // Zero out buffer so strlen operations don't go out of bounds
-//    memset(buf, 0, bufsize);
-//    memcpy(buf, mbed_redirect_file, strlen(mbed_redirect_file));
-//
+
 //    do {
 //        // Look for key or the end of the string
 //        while ((*buf != '@') && (*buf != 0)) {
 //            buf++;
 //        }
-//
+
 //        // If key was found then replace it
 //        if ('@' == *buf) {
 //            switch (*(buf + 1)) {
@@ -398,53 +476,67 @@ static uint32_t read_file_need_bl_txt(uint32_t sector_offset, uint8_t *data, uin
 //                case 'M':   // MAC address
 //                    insert_string = (uint8_t *)info_get_mac();
 //                    break;
-//
+
 //                case 'u':
 //                case 'U':   // UUID
 //                    insert_string = (uint8_t *)info_get_unique_id();
 //                    break;
-//
+
 //                case 'b':
 //                case 'B':   // Board ID
 //                    insert_string = (uint8_t *)info_get_board_id();
 //                    break;
-//
+
 //                case 'h':
 //                case 'H':   // Host ID
 //                    insert_string = (uint8_t *)info_get_host_id();
 //                    break;
-//
+
 //                case 't':
 //                case 'T':   // Target ID
 //                    insert_string = (uint8_t *)info_get_target_id();
 //                    break;
-//
+
 //                case 'd':
 //                case 'D':   // HIC
 //                    insert_string = (uint8_t *)info_get_hic_id();
 //                    break;
-//
+
 //                case 'v':
 //                case 'V':   // Firmware version
 //                    insert_string = (uint8_t *)info_get_version();
 //                    break;
-//
+
 //                case 'r':
 //                case 'R':   // URL replacement
 //                    insert_string = (uint8_t *)daplink_target_url;
 //                    break;
-//
+
 //                default:
 //                    insert_string = (uint8_t *)"ERROR";
 //                    break;
 //            }
-//
-//            insert(buf, insert_string, 2);
+
+//            // Remove strip_count characters from the start of buf and then insert
+//            // insert_string at the new start of buf.
+//            uint32_t buf_len = strlen((const char *)buf);
+//            uint32_t str_len = strlen((const char *)insert_string);
+//            //buffer overflow check on insert
+//            if( (buf + str_len + buf_len - 2) < (orig_buf+bufsize)){
+//                // push out string
+//                memmove(buf + str_len, buf + 2, buf_len - 2);
+//                // insert
+//                memcpy(buf, insert_string, str_len);
+//            }else{
+//                //stop the string expansion and leave as it is
+//                buf += buf_len; 
+//                break;
+//            }
+//						
 //        }
 //    } while (*buf != '\0');
-//
-//    size_left = buf - orig_buf;
-//    memset(buf, 0, bufsize - size_left);
+//		
+//    return (buf - orig_buf);
 //}
 
 // Initialize flash algo, erase flash, uninit algo

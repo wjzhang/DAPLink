@@ -3,7 +3,7 @@
  * @brief   Implementation of swd_host.h
  *
  * DAPLink Interface Firmware
- * Copyright (c) 2009-2016, ARM Limited, All Rights Reserved
+ * Copyright (c) 2009-2017, ARM Limited, All Rights Reserved
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -19,6 +19,7 @@
  * limitations under the License.
  */
 
+#ifndef TARGET_MCU_CORTEX_A
 #include "RTL.h"
 #include "target_reset.h"
 #include "target_config.h"
@@ -27,6 +28,7 @@
 #include "DAP_config.h"
 #include "DAP.h"
 #include "target_ids.h"
+#include "gpio.h"
 
 // Default NVIC and Core debug base addresses
 // TODO: Read these addresses from ROM.
@@ -36,13 +38,6 @@
 // AP CSW register, base value
 #define CSW_VALUE (CSW_RESERVED | CSW_MSTRDBG | CSW_HPROT | CSW_DBGSTAT | CSW_SADDRINC)
 
-// SWD register access
-#define SWD_REG_AP        (1)
-#define SWD_REG_DP        (0)
-#define SWD_REG_R         (1<<1)
-#define SWD_REG_W         (0<<1)
-#define SWD_REG_ADR(a)    (a & 0x0c)
-
 #define DCRDR 0xE000EDF8
 #define DCRSR 0xE000EDF4
 #define DHCSR 0xE000EDF0
@@ -51,7 +46,12 @@
 #define MAX_SWD_RETRY 100//10
 #define MAX_TIMEOUT   1000000  // Timeout for syscalls on target
 
+#define SCB_AIRCR_PRIGROUP_Pos              8                                             /*!< SCB AIRCR: PRIGROUP Position */
+#define SCB_AIRCR_PRIGROUP_Msk             (7UL << SCB_AIRCR_PRIGROUP_Pos)                /*!< SCB AIRCR: PRIGROUP Mask */
+
+#if !defined(SOFT_RESET)
 #define SOFT_RESET  SYSRESETREQ
+
 // Some targets require a soft reset for flash programming (RESET_PROGRAM).
 // DAP operations as they are controlled by the remote debugger.
 #if defined(BOARD_BAMBINO_210) || defined(BOARD_BAMBINO_210E) || defined(TARGET_NRF51822)
@@ -62,6 +62,8 @@
 // For some Cortex-M devices, VECTRESET is the only way to reset the core.
 // VECTRESET is not supported on Cortex-M0 and Cortex-M1 cores.
 #define SOFT_RESET  VECTRESET
+#endif
+
 #endif
 
 typedef struct {
@@ -76,10 +78,7 @@ typedef struct {
 
 static DAP_STATE dap_state;
 
-static uint8_t swd_read_core_register(uint32_t n, uint32_t *val);
-static uint8_t swd_write_core_register(uint32_t n, uint32_t val);
-
-static void int2array(uint8_t *res, uint32_t data, uint8_t len)
+void int2array(uint8_t *res, uint32_t data, uint8_t len)
 {
     uint8_t i = 0;
 
@@ -88,7 +87,7 @@ static void int2array(uint8_t *res, uint32_t data, uint8_t len)
     }
 }
 
-static uint8_t swd_transfer_retry(uint32_t req, uint32_t *data)
+uint8_t swd_transfer_retry(uint32_t req, uint32_t *data)
 {
     uint8_t i, ack;
 
@@ -121,6 +120,14 @@ uint8_t swd_off(void)
     return 1;
 }
 
+uint8_t swd_clear_errors(void)
+{
+    if (!swd_write_dp(DP_ABORT, STKCMPCLR | STKERRCLR | WDERRCLR | ORUNERRCLR)) {
+        return 0;
+    }
+    return 1;
+}
+
 // Read debug port register.
 uint8_t swd_read_dp(uint8_t adr, uint32_t *val)
 {
@@ -149,22 +156,17 @@ uint8_t swd_write_dp(uint8_t adr, uint32_t val)
     uint8_t data[4];
     uint8_t ack;
 
-    switch (adr) {
-        case DP_SELECT:
-            if (dap_state.select == val) {
-                return 1;
-            }
-
-            dap_state.select = val;
-            break;
-
-        default:
-            break;
+    //check if the right bank is already selected
+    if ((adr == DP_SELECT) && (dap_state.select == val)) {
+        return 1;
     }
 
     req = SWD_REG_DP | SWD_REG_W | SWD_REG_ADR(adr);
     int2array(data, val, 4);
     ack = swd_transfer_retry(req, (uint32_t *)data);
+    if ((ack == DAP_TRANSFER_OK) && (adr == DP_SELECT)) {
+        dap_state.select = val;
+    }
     return (ack == 0x01);
 }
 
@@ -298,32 +300,32 @@ static uint8_t swd_read_block(uint32_t address, uint8_t *data, uint32_t size)
     }
 
     // TAR write
-    req = SWD_REG_AP | SWD_REG_W | (1 << 2);
+    req = SWD_REG_AP | SWD_REG_W | AP_TAR;
     int2array(tmp_in, address, 4);
 
-    if (swd_transfer_retry(req, (uint32_t *)tmp_in) != 0x01) {
+    if (swd_transfer_retry(req, (uint32_t *)tmp_in) != DAP_TRANSFER_OK) {
         return 0;
     }
 
     // read data
-    req = SWD_REG_AP | SWD_REG_R | (3 << 2);
+    req = SWD_REG_AP | SWD_REG_R | AP_DRW;
 
-    // dummy read
-    if (swd_transfer_retry(req, (uint32_t *)data) != 0x01) {
+    // initiate first read, data comes back in next read
+    if (swd_transfer_retry(req, NULL) != 0x01) {
         return 0;
     }
 
-    for (i = 0; i < size_in_words; i++) {
-        if (swd_transfer_retry(req, (uint32_t *)data) != 0x01) {
+    for (i = 0; i < (size_in_words - 1); i++) {
+        if (swd_transfer_retry(req, (uint32_t *)data) != DAP_TRANSFER_OK) {
             return 0;
         }
 
         data += 4;
     }
 
-    // dummy read
+    // read last word
     req = SWD_REG_DP | SWD_REG_R | SWD_REG_ADR(DP_RDBUFF);
-    ack = swd_transfer_retry(req, NULL);
+    ack = swd_transfer_retry(req, (uint32_t *)data);
     return (ack == 0x01);
 }
 
@@ -392,7 +394,7 @@ static uint8_t swd_write_data(uint32_t address, uint32_t data)
 }
 
 // Read 32-bit word from target memory.
-static uint8_t swd_read_word(uint32_t addr, uint32_t *val)
+uint8_t swd_read_word(uint32_t addr, uint32_t *val)
 {
     if (!swd_write_ap(AP_CSW, CSW_VALUE | CSW_SIZE32)) {
         return 0;
@@ -406,7 +408,7 @@ static uint8_t swd_read_word(uint32_t addr, uint32_t *val)
 }
 
 // Write 32-bit word to target memory.
-static uint8_t swd_write_word(uint32_t addr, uint32_t val)
+uint8_t swd_write_word(uint32_t addr, uint32_t val)
 {
     if (!swd_write_ap(AP_CSW, CSW_VALUE | CSW_SIZE32)) {
         return 0;
@@ -420,7 +422,7 @@ static uint8_t swd_write_word(uint32_t addr, uint32_t val)
 }
 
 // Read 8-bit byte from target memory.
-static uint8_t swd_read_byte(uint32_t addr, uint8_t *val)
+uint8_t swd_read_byte(uint32_t addr, uint8_t *val)
 {
     uint32_t tmp;
 
@@ -437,7 +439,7 @@ static uint8_t swd_read_byte(uint32_t addr, uint8_t *val)
 }
 
 // Write 8-bit byte to target memory.
-static uint8_t swd_write_byte(uint32_t addr, uint8_t val)
+uint8_t swd_write_byte(uint32_t addr, uint8_t val)
 {
     uint32_t tmp;
 
@@ -601,7 +603,7 @@ static uint8_t swd_write_debug_state(DEBUG_STATE *state)
     return 1;
 }
 
-static uint8_t swd_read_core_register(uint32_t n, uint32_t *val)
+uint8_t swd_read_core_register(uint32_t n, uint32_t *val)
 {
     int i = 0, timeout = 100;
 
@@ -631,7 +633,7 @@ static uint8_t swd_read_core_register(uint32_t n, uint32_t *val)
     return 1;
 }
 
-static uint8_t swd_write_core_register(uint32_t n, uint32_t val)
+uint8_t swd_write_core_register(uint32_t n, uint32_t val)
 {
     int i = 0, timeout = 100;
 
@@ -776,53 +778,88 @@ static uint8_t JTAG2SWD()
 uint8_t swd_init_debug(void)
 {
     uint32_t tmp = 0;
+    int i = 0;
+    int timeout = 100;
     // init dap state with fake values
     dap_state.select = 0xffffffff;
     dap_state.csw = 0xffffffff;
-    swd_init();
-    // call a target dependant function
-    // this function can do several stuff before really
-    // initing the debug
-    target_before_init_debug();
-
-    if (!JTAG2SWD()) {
-        return 0;
-    }
-
-    if (!swd_write_dp(DP_ABORT, STKCMPCLR | STKERRCLR | WDERRCLR | ORUNERRCLR)) {
-        return 0;
-    }
-
-    // Ensure CTRL/STAT register selected in DPBANKSEL
-    if (!swd_write_dp(DP_SELECT, 0)) {
-        return 0;
-    }
-
-    // Power up
-    if (!swd_write_dp(DP_CTRL_STAT, CSYSPWRUPREQ | CDBGPWRUPREQ)) {
-        return 0;
-    }
-
+    
+    int8_t retries = 4;
+    int8_t do_abort = 0;
     do {
-        if (!swd_read_dp(DP_CTRL_STAT, &tmp)) {
-            return 0;
+        if (do_abort) {
+            //do an abort on stale target, then reset the device
+            swd_write_dp(DP_ABORT, DAPABORT);
+            swd_set_target_reset(1);
+            os_dly_wait(2);
+            swd_set_target_reset(0);
+            os_dly_wait(2);
+            do_abort = 0;
         }
-    } while ((tmp & (CDBGPWRUPACK | CSYSPWRUPACK)) != (CDBGPWRUPACK | CSYSPWRUPACK));
+        swd_init();
+        // call a target dependant function
+        // this function can do several stuff before really
+        // initing the debug
+        target_before_init_debug();
 
-    if (!swd_write_dp(DP_CTRL_STAT, CSYSPWRUPREQ | CDBGPWRUPREQ | TRNNORMAL | MASKLANE)) {
-        return 0;
-    }
+        if (!JTAG2SWD()) {
+            do_abort = 1;
+            continue;
+        }
 
-    // call a target dependant function:
-    // some target can enter in a lock state
-    // this function can unlock these targets
-    target_unlock_sequence();
+        if (!swd_clear_errors()) {
+            do_abort = 1;
+            continue;
+        }
 
-    if (!swd_write_dp(DP_SELECT, 0)) {
-        return 0;
-    }
+        if (!swd_write_dp(DP_SELECT, 0)) {
+            do_abort = 1;
+            continue;
+            
+        }
+        
+        // Power up
+        if (!swd_write_dp(DP_CTRL_STAT, CSYSPWRUPREQ | CDBGPWRUPREQ)) {
+            do_abort = 1;
+            continue;
+        }
 
-    return 1;
+        for (i = 0; i < timeout; i++) {
+            if (!swd_read_dp(DP_CTRL_STAT, &tmp)) {
+                do_abort = 1;
+                break;
+            }
+            if ((tmp & (CDBGPWRUPACK | CSYSPWRUPACK)) == (CDBGPWRUPACK | CSYSPWRUPACK)) {
+                // Break from loop if powerup is complete
+                break;
+            }
+        }
+        if ((i == timeout) || (do_abort == 1)) {
+            // Unable to powerup DP
+            do_abort = 1;
+            continue;
+        }
+
+        if (!swd_write_dp(DP_CTRL_STAT, CSYSPWRUPREQ | CDBGPWRUPREQ | TRNNORMAL | MASKLANE)) {
+            do_abort = 1;
+            continue;
+        }
+
+        // call a target dependant function:
+        // some target can enter in a lock state
+        // this function can unlock these targets
+        target_unlock_sequence();
+
+        if (!swd_write_dp(DP_SELECT, 0)) {
+            do_abort = 1;
+            continue;
+        }
+        
+        return 1;
+    
+    } while (--retries > 0);
+    
+    return 0;
 }
 
 static uint8_t get_target_id(uint32_t coreid)
@@ -899,12 +936,15 @@ uint8_t swd_init_get_target(void)
     // init dap state with fake values
     dap_state.select = 0xffffffff;
     dap_state.csw = 0xffffffff;
+    
     swd_init();
 
-    //add Reset Pin
-    swd_set_target_reset(1);
-    os_dly_wait(1);
-    swd_set_target_reset(0);
+    if (gpio_get_config(PIN_CONFIG_DT01) == PIN_HIGH) {
+        //add Reset Pin
+        swd_set_target_reset(1);
+        os_dly_wait(1);
+        swd_set_target_reset(0);
+    }
     //need wait 500us
     for( i = 0; i < 1200; i++) {}
 
@@ -946,26 +986,32 @@ uint8_t swd_init_get_target(void)
     // need halt MCU for read right data from Peripher address space when power on
     // Enable debug and halt the core (DHCSR <- 0xA05F0003)
     if (!swd_write_word(DBG_HCSR, DBGKEY | C_DEBUGEN | C_HALT)) {
-        return 0;
+        return Target_UNKNOWN;
     }
-    
+      
     // Enable halt on reset
     if (!swd_write_word(DBG_EMCR, VC_CORERESET)) {
-        return 0;
-    }    
+        return Target_UNKNOWN;
+    }  
+
+    // use hardware reset for STM32L486
+    if (gpio_get_config(PIN_CONFIG_DT01) == PIN_HIGH) {    
+        swd_set_target_reset(1);
+        os_dly_wait(1);
+        swd_set_target_reset(0);
+    }        
 
     // Wait until core is halted
     do {
         if (!swd_read_word(DBG_HCSR, &tmp)) {
-            return 0;
+            return Target_UNKNOWN;
         }
     } while ((tmp & S_HALT) == 0);
     
     // Disable halt on reset
     if (!swd_write_word(DBG_EMCR, 0)) {
-        return 0;
-    }    
-    
+        return Target_UNKNOWN;
+    }       
     
     // core ID -> target ID    
     return get_target_id(tmpid);
@@ -1024,15 +1070,69 @@ uint8_t swd_init_get_target_no_resetandhalt(void)
     return get_target_id(tmpid);
 }
 
+uint32_t swd_get_target_uniqueid(uint32_t *pbuffer, uint32_t len)
+{
+     uint32_t idaddress = 0;
+     uint32_t data = 0;
+     uint32_t size = 0;
+     uint8_t targetMCU =  swd_init_get_target_no_resetandhalt();
+     switch (targetMCU) {
+         case Target_NRF51822:
+         case Target_NRF52832:
+             idaddress = 0x10000000 + 0x060;
+             size = 2;
+             break;
+         
+         case Target_STM32F031:
+         case Target_STM32F051:
+         case Target_STM32F071:
+         case Target_STM32F301K8:             
+             idaddress = 0x1FFFF7AC;
+             size = 3;
+             break;
+         
+         case Target_STM32F103:
+             idaddress = 0x1FFFF7E8;
+             size = 3;
+             break;
+         
+         case Target_STM32F405:
+             idaddress = 0x1FFF7A10;
+             size = 3;
+             break;
+         
+         case Target_STM32L486:
+             idaddress = 0x1FFF7590;
+             size = 3;
+             break;
+         
+         case Target_UNKNOWN:
+         default:
+             return 0;
+             //break;            
+     }
+     // read unique id
+     for(uint32_t i = 0; i < size; i++) {
+            swd_read_word(idaddress + i * 4, &data);
+            *pbuffer++ = data; 
+     }
+     return size;
+}
+
 __attribute__((weak)) void swd_set_target_reset(uint8_t asserted)
 {
     (asserted) ? PIN_nRESET_OUT(0) : PIN_nRESET_OUT(1);
 }
 
+
 uint8_t swd_set_target_state_hw(TARGET_RESET_STATE state)
 {
     uint32_t val;
-    swd_init();
+    int8_t ap_retries = 2;
+    /* Calling swd_init prior to entering RUN state causes operations to fail. */
+    if (state != RUN) {
+        swd_init();
+    }
 
     switch (state) {
         case RESET_HOLD:
@@ -1058,8 +1158,14 @@ uint8_t swd_set_target_state_hw(TARGET_RESET_STATE state)
             }
 
             // Enable debug
-            if (!swd_write_word(DBG_HCSR, DBGKEY | C_DEBUGEN)) {
+            while(swd_write_word(DBG_HCSR, DBGKEY | C_DEBUGEN) == 0) {
+                if( --ap_retries <=0 )
                 return 0;
+                // Target is in invalid state?
+                swd_set_target_reset(1);
+                os_dly_wait(2);
+                swd_set_target_reset(0);
+                os_dly_wait(2);
             }
 
             // Enable halt on reset
@@ -1099,7 +1205,7 @@ uint8_t swd_set_target_state_hw(TARGET_RESET_STATE state)
                 return 0;
             }
 
-            if (!swd_write_dp(DP_ABORT, STKCMPCLR | STKERRCLR | WDERRCLR | ORUNERRCLR)) {
+            if (!swd_clear_errors()) {
                 return 0;
             }
 
@@ -1120,6 +1226,35 @@ uint8_t swd_set_target_state_hw(TARGET_RESET_STATE state)
 
             break;
 
+        case HALT:
+            if (!swd_init_debug()) {
+                return 0;
+            }
+
+            // Enable debug and halt the core (DHCSR <- 0xA05F0003)
+            if (!swd_write_word(DBG_HCSR, DBGKEY | C_DEBUGEN | C_HALT)) {
+                return 0;
+            }
+
+            // Wait until core is halted
+            do {
+                if (!swd_read_word(DBG_HCSR, &val)) {
+                    return 0;
+                }
+            } while ((val & S_HALT) == 0);
+            break;
+
+        case RUN:
+            if (!swd_write_word(DBG_HCSR, DBGKEY)) {
+                return 0;
+            }
+            swd_off();
+            break;
+
+        case POST_FLASH_RESET:
+            // This state should be handled in target_reset.c, nothing needs to be done here.
+            break;
+
         default:
             return 0;
     }
@@ -1130,7 +1265,11 @@ uint8_t swd_set_target_state_hw(TARGET_RESET_STATE state)
 uint8_t swd_set_target_state_sw(TARGET_RESET_STATE state)
 {
     uint32_t val;
+    int8_t ap_retries = 2;
+    /* Calling swd_init prior to enterring RUN state causes operations to fail. */
+    if (state != RUN) {
     swd_init();
+    }
 
     switch (state) {
         case RESET_HOLD:
@@ -1138,6 +1277,12 @@ uint8_t swd_set_target_state_sw(TARGET_RESET_STATE state)
             break;
 
         case RESET_RUN:
+//            swd_set_target_reset(1);
+//            os_dly_wait(2);
+//            swd_set_target_reset(0);
+//            os_dly_wait(2);
+//            swd_off();
+        
             if (!swd_init_debug()) {
                 return 0;
             }
@@ -1163,8 +1308,15 @@ uint8_t swd_set_target_state_sw(TARGET_RESET_STATE state)
             }
 
             // Enable debug and halt the core (DHCSR <- 0xA05F0003)
-            if (!swd_write_word(DBG_HCSR, DBGKEY | C_DEBUGEN | C_HALT)) {
+            while (swd_write_word(DBG_HCSR, DBGKEY | C_DEBUGEN | C_HALT) == 0) {
+                if ( --ap_retries <=0 ) {
                 return 0;
+            }
+                // Target is in invalid state?
+//                swd_set_target_reset(1);
+//                os_dly_wait(2);
+//                swd_set_target_reset(0);
+//                os_dly_wait(2);
             }
 
             // Wait until core is halted
@@ -1180,7 +1332,11 @@ uint8_t swd_set_target_state_sw(TARGET_RESET_STATE state)
             }
 
             // Perform a soft reset
-            if (!swd_write_word(NVIC_AIRCR, VECTKEY | SOFT_RESET)) {
+            if (!swd_read_word(NVIC_AIRCR, &val)) {
+                return 0;
+            }
+
+            if (!swd_write_word(NVIC_AIRCR, VECTKEY | (val & SCB_AIRCR_PRIGROUP_Msk) | SOFT_RESET)) {
                 return 0;
             }
 
@@ -1211,7 +1367,7 @@ uint8_t swd_set_target_state_sw(TARGET_RESET_STATE state)
                 return 0;
             }
 
-            if (!swd_write_dp(DP_ABORT, STKCMPCLR | STKERRCLR | WDERRCLR | ORUNERRCLR)) {
+            if (!swd_clear_errors()) {
                 return 0;
             }
 
@@ -1232,9 +1388,40 @@ uint8_t swd_set_target_state_sw(TARGET_RESET_STATE state)
 
             break;
 
+        case HALT:
+            if (!swd_init_debug()) {
+                return 0;
+            }
+
+            // Enable debug and halt the core (DHCSR <- 0xA05F0003)
+            if (!swd_write_word(DBG_HCSR, DBGKEY | C_DEBUGEN | C_HALT)) {
+                return 0;
+            }
+
+            // Wait until core is halted
+            do {
+                if (!swd_read_word(DBG_HCSR, &val)) {
+                    return 0;
+                }
+            } while ((val & S_HALT) == 0);
+            break;
+
+        case RUN:
+            if (!swd_write_word(DBG_HCSR, DBGKEY)) {
+                return 0;
+            }
+            swd_off();
+            break;
+
+        case POST_FLASH_RESET:
+            // This state should be handled in target_reset.c, nothing needs to be done here.
+            break;
+
         default:
             return 0;
     }
 
     return 1;
 }
+
+#endif

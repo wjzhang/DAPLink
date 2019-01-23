@@ -23,7 +23,10 @@ import time
 import shutil
 import six
 import info
+import intelhex
+from test_info import TestInfo
 
+from pyOCD.board import MbedBoard
 
 def _same(d1, d2):
     assert type(d1) is bytearray
@@ -61,8 +64,10 @@ MOCK_FILE_LIST_AFTER = [
     ("file2.jpg", "file contents here")
 ]
 
-
 class MassStorageTester(object):
+
+    RETRY_COUNT = 5
+    DELAY_BEFORE_RETRY_S = 30
 
     def __init__(self, board, parent_test, test_name):
         self.board = board
@@ -78,6 +83,7 @@ class MassStorageTester(object):
         self._mock_file_list_after = []
         self._mock_dir_list_after = []
         self._programming_file_name = None
+        self._start = 0
 
     def set_shutils_copy(self, source_file_name):
         """
@@ -110,15 +116,17 @@ class MassStorageTester(object):
         assert isinstance(size, six.integer_types)
         self._flush_size = size
 
-    def set_expected_data(self, data):
+    def set_expected_data(self, data, start=0):
         """Data that should have been written to the device"""
         assert data is None or type(data) is bytearray
         self._expected_data = data
+        self._start = start
 
-    def set_expected_failure_msg(self, msg):
+    def set_expected_failure_msg(self, msg, error_type):
         """Set the expected failure message as a string"""
         assert msg is None or type(msg) is str
         self._expected_failure_msg = msg
+        self._expected_failure_type = error_type
 
     def add_mock_files(self, file_list):
         """Add a list of tuples containing a file and contents"""
@@ -136,16 +144,62 @@ class MassStorageTester(object):
         """Add a list of directoies"""
         self._mock_dir_list_after.extend(dir_list)
 
-    def _check_data_correct(self, expected_data, test_info):
+    def _check_data_correct(self, expected_data, _):
         """Return True if the actual data written matches the expected"""
         data_len = len(expected_data)
-        data_loaded = self.board.read_target_memory(0, data_len)
+        data_loaded = self.board.read_target_memory(self._start, data_len)
         return _same(expected_data, data_loaded)
 
     def run(self):
+        for retry_count in range(self.RETRY_COUNT):
+            test_info = TestInfo(self.test_name)
+            if retry_count > 0:
+                test_info.info('Previous attempts %s' % retry_count)
+            try:
+                self._run(test_info)
+            except IOError:
+                time.sleep(self.DELAY_BEFORE_RETRY_S)
+                # Update board info since a remount could have occurred
+                self.board.update_board_info()
+                continue
+            self.parent_test.attach_subtest(test_info)
+            break
+        else:
+            raise Exception("Flashing failed after %i retries" %
+                            self.RETRY_COUNT)
+
+    def _run(self, test_info):
         # Expected data must be set, even if to None
         assert hasattr(self, '_expected_data')
-        test_info = self.parent_test.create_subtest(self.test_name)
+
+        # Windows 8/10 workaround
+        # ----
+        # By default Windows 8 and 10 access and write to removable drives
+        # shortly after they are connected. If this occurs at the same time
+        # as a file copy the file could be sent out of order causing DAPLink
+        # programming to terminate early and report an error.
+        #
+        # This causes testing to intermittently fail with errors such as:
+        # - "The transfer timed out."
+        # - "File sent out of order by PC. Target might
+        #     not be programmed correctly."
+        #
+        # To prevent Windows from writing to removable drives on connect
+        # drive indexing can be turned off with the following procedure:
+        # - Start the program "gpedit.msc"
+        # - Navigate to "Computer Configuration \ Administrative Templates
+        #                \ Windows Components \ Search"
+        # - Enable the policy "Do not allow locations on removable drives
+        #                      to be added to  libraries."
+        #
+        # Rather than requiring all testers of DAPLink make this setting
+        # change the below sleep has been added. This added delay allows
+        # windows to complete the writes it performs shortly after connect.
+        # This allows testing to be performed without interruption.
+        #
+        # Note - if drive indexing is turned off as mentioned above then
+        #        this sleep is not needed.
+        time.sleep(2)
 
         # Copy mock files before test
         self._mock_file_list = []
@@ -201,7 +255,7 @@ class MassStorageTester(object):
             os.mkdir(dir_path)
         for file_name, file_contents in self._mock_file_list_after:
             file_path = self.board.get_file_path(file_name)
-            with open(file_path, 'wb') as file_handle:
+            with open(file_path, 'w') as file_handle:
                 file_handle.write(file_contents)
 
         self.board.wait_for_remount(test_info)
@@ -210,7 +264,7 @@ class MassStorageTester(object):
         self.board.test_fs(test_info)
 
         # Check various failure cases
-        msg = self.board.get_failure_message()
+        msg, error_type = self.board.get_failure_message_and_type()
         failure_expected = self._expected_failure_msg is not None
         failure_occured = msg is not None
         if failure_occured and not failure_expected:
@@ -220,12 +274,18 @@ class MassStorageTester(object):
             test_info.failure('Failure expected but did not occur')
             return
         if failure_expected and failure_occured:
-            if msg == self._expected_failure_msg:
-                test_info.info('Failure as expected: "%s"' % msg.strip())
-            else:
+            if msg == self._expected_failure_msg and error_type == self._expected_failure_type:
+                test_info.info(
+                    'Failure as expected: "%s, %s"' %
+                    (msg.strip(), error_type.strip()))
+            elif msg != self._expected_failure_msg:
                 test_info.failure('Failure but wrong string: "%s" vs "%s"' %
                                   (msg.strip(),
                                    self._expected_failure_msg.strip()))
+            else:
+                test_info.failure(
+                    'Failure but wrong type: "%s" vs "%s"' %
+                    (error_type.strip(), self._expected_failure_type.strip()))
             return
 
         # These cases should have been handled above
@@ -266,33 +326,39 @@ def test_mass_storage(workspace, parent_test):
     blank_bin_contents = bytearray([0xff]) * 0x2000
     vectors_and_pad = bin_file_contents[0:32] + blank_bin_contents
     locked_when_erased = board.get_board_id() in info.BOARD_ID_LOCKED_WHEN_ERASED
+    page_erase_supported = board.get_board_id() in info.BOARD_ID_SUPPORTING_PAGE_ERASE
     bad_vector_table = target.name in info.TARGET_WITH_BAD_VECTOR_TABLE_LIST
+
+    intel_hex = intelhex.IntelHex(hex_file)
+    addresses = intel_hex.addresses()
+    addresses.sort()
+    start = addresses[0]
 
     # Test loading a binary file with shutils
     if not bad_vector_table:
         test = MassStorageTester(board, test_info, "Shutil binary file load")
         test.set_shutils_copy(bin_file)
-        test.set_expected_data(bin_file_contents)
+        test.set_expected_data(bin_file_contents, start)
         test.run()
 
     # Test loading a binary file with flushes
     if not bad_vector_table:
         test = MassStorageTester(board, test_info, "Load binary with flushes")
         test.set_programming_data(bin_file_contents, 'image.bin')
-        test.set_expected_data(bin_file_contents)
+        test.set_expected_data(bin_file_contents, start)
         test.set_flush_size(0x1000)
         test.run()
 
     # Test loading a hex file with shutils
     test = MassStorageTester(board, test_info, "Shutil hex file load")
     test.set_shutils_copy(hex_file)
-    test.set_expected_data(bin_file_contents)
+    test.set_expected_data(bin_file_contents, start)
     test.run()
 
     # Test loading a hex file with flushes
     test = MassStorageTester(board, test_info, "Load hex with flushes")
     test.set_programming_data(hex_file_contents, 'image.hex')
-    test.set_expected_data(bin_file_contents)
+    test.set_expected_data(bin_file_contents, start)
     test.set_flush_size(0x1000)
     test.run()
 
@@ -302,15 +368,15 @@ def test_mass_storage(workspace, parent_test):
         test_data_size = 0x789
         test_data = bin_file_contents[0:0 + test_data_size]
         test.set_programming_data(test_data, 'image.bin')
-        test.set_expected_data(test_data)
+        test.set_expected_data(test_data, start)
         test.run()
 
     # Test loading a blank binary - this image should cause a timeout
     #    since it doesn't have a valid vector table
     test = MassStorageTester(board, test_info, "Load blank binary")
     test.set_programming_data(blank_bin_contents, 'image.bin')
-    test.set_expected_failure_msg("The transfer timed out.\r\n")
-    test.set_expected_data(None)
+    test.set_expected_failure_msg("The transfer timed out.", "transient, user")
+    test.set_expected_data(None, start)
     test.run()
 
     # Test loading a blank binary with a vector table but padded with 0xFF.
@@ -319,10 +385,10 @@ def test_mass_storage(workspace, parent_test):
         test = MassStorageTester(board, test_info, "Load blank binary + vector table")
         test.set_programming_data(vectors_and_pad, 'image.bin')
         if locked_when_erased:
-            test.set_expected_failure_msg("The interface firmware ABORTED programming. Image is trying to set security bits\r\n")
-            test.set_expected_data(None)
+            test.set_expected_failure_msg("The interface firmware ABORTED programming. Image is trying to set security bits", "user")
+            test.set_expected_data(None, start)
         else:
-            test.set_expected_data(vectors_and_pad)
+            test.set_expected_data(vectors_and_pad, start)
         test.run()
 
     # Test a normal load with dummy files created beforehand
@@ -332,16 +398,74 @@ def test_mass_storage(workspace, parent_test):
     test.add_mock_files(MOCK_FILE_LIST)
     test.add_mock_dirs_after_load(MOCK_DIR_LIST_AFTER)
     test.add_mock_files_after_load(MOCK_FILE_LIST_AFTER)
-    test.set_expected_data(bin_file_contents)
+    test.set_expected_data(bin_file_contents, start)
     test.run()
     # Note - it is not unexpected for an "Extra Files" test to fail
     #        when a binary file is loaded, since there is no way to
     #        tell where the end of the file is.
 
+    if page_erase_supported:
+        # Test page erase, a.k.a. sector erase by generating iHex with discrete addresses,
+        # programing the device then comparing device memory against expected content.
+        test = MassStorageTester(board, test_info, "Sector Erase")
+        with MbedBoard.chooseBoard(board_id=board.get_unique_id(), init_board=False) as mbed_board:
+            memory_map = mbed_board.target.getMemoryMap()
+        flash_regions = [region for region in memory_map if region.type == 'flash']
+
+        max_address = intel_hex.maxaddr()
+        # Create an object. We'll add the addresses of unused even blocks to it first, then unused odd blocks for each region
+        ih = intelhex.IntelHex()
+        # Add the content from test bin first
+        expected_bin_contents = bin_file_contents
+        for region_index, the_region in enumerate(flash_regions):
+            if the_region.isBootMemory == False:
+                continue
+            flash_start = the_region.start
+            flash_length = the_region.length
+            block_size = the_region.blocksize
+
+            number_of_blocks = flash_length // block_size
+
+            # Sanity check the regions are contiguous
+            if region_index:
+                assert flash_start == (flash_regions[region_index - 1].start + flash_regions[region_index - 1].length)
+
+            if max_address >= (flash_start + flash_length):
+                # This bin image crosses this region, don't modify the content, go to the next region
+                continue
+            elif max_address >= flash_start:
+                # This bin image occupies partial region. Skip the used portion to avoid touching any security bits and pad the rest
+                expected_bin_contents += bytearray([0xff]) * (flash_start + flash_length - max_address - 1)
+                # Calculate the starting block after the image to avoid stumbling upon security bits
+                block_start = (max_address - flash_start) // block_size + 1
+            else:
+                # This bin image doesn't reach this region
+                expected_bin_contents += bytearray([0xff]) * flash_length
+                block_start = 0
+            # For all even blocks, overwrite all addresses with 0x55; for all odd blocks, overwrite all addresses with 0xAA
+            for pass_number in range (2):
+                if pass_number == 0:
+                    modifier = 0x55
+                else:
+                    modifier = 0xAA
+                    block_start += 1
+                for block_idx in range(block_start, number_of_blocks, 2):
+                    for address_to_modify in range (flash_start + block_idx * block_size, flash_start + (block_idx + 1) * block_size):
+                        expected_bin_contents[address_to_modify] = modifier
+                        ih[address_to_modify] = modifier
+        if not os.path.exists("tmp"):
+            os.makedirs("tmp")
+        # Write out the modified iHex to file
+        ih.tofile("tmp/interleave.hex", format='hex')
+        # Load this hex file with shutils
+        test.set_shutils_copy("tmp/interleave.hex")
+        test.set_expected_data(expected_bin_contents, start)
+        test.run()
+        
     # Finally, load a good binary
     test = MassStorageTester(board, test_info, "Load good file to restore state")
     test.set_programming_data(hex_file_contents, 'image.hex')
-    test.set_expected_data(bin_file_contents)
+    test.set_expected_data(bin_file_contents, start)
     test.run()
 
     # Ideas for future tests - contributions welcome

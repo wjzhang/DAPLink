@@ -187,6 +187,7 @@ const target_cfg_t target_device[] =
         .ram_start      = 0x20000000,
         .ram_end        = 0x20004000,  // 16KB
         .flash_algo     = (program_target_t *) &stm32f301k8_flash,
+        
         .get_sector_number = stm32f301k8_GetSecNum,
         .get_sector_address = stm32f301k8_GetSecAddress,
         .get_sector_length = stm32f301k8_GetSecLength,        
