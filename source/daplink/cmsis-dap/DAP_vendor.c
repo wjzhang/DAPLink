@@ -39,6 +39,7 @@
 #include "target_config.h"
 #include "read_uid.h"
 #include "gpio.h"
+#include "target_ids.h"
 
 void main_identification_led(uint16_t time);
 
@@ -139,6 +140,10 @@ uint32_t DAP_ProcessVendorCommand(const uint8_t *request, uint8_t *response) {
         break;
     }
     case ID_DAP_Vendor10: {
+        // check target is known
+        if ( targetID == Target_UNKNOWN ) {
+            targetID = swd_init_get_target();
+        }
         // open mass storage device stream
         *response = stream_open((stream_type_t)(*request));
         num += (1 << 16) | 1;
@@ -147,6 +152,7 @@ uint32_t DAP_ProcessVendorCommand(const uint8_t *request, uint8_t *response) {
     case ID_DAP_Vendor11: {
         // close mass storage device stream
         *response = stream_close();
+        targetID = Target_UNKNOWN;
         num += 1;
         break;
     }
