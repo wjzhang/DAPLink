@@ -113,7 +113,7 @@ static void setup_basics()
         idx += util_write_hex8(string_host_id + idx, host_id_sha256[i]);
     }    
     //Just display 20 character
-    string_host_id[20] = 0;
+    string_host_id[24] = 0;
     // Target ID
     idx = 0;
 
