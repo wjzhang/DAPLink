@@ -38,7 +38,7 @@ static const daplink_info_t *const info_if = (daplink_info_t *)(DAPLINK_ROM_IF_S
 
 // Raw variables
 static uint8_t  host_id_sha256[32];
-static uint8_t  id_sha256_buffer[8 + 16] = {'L', 'P', 'C', '1', '1', 'U', '3', '5'};
+static uint8_t  id_sha256_buffer[8 + 1 + 32] = {'L', 'P', 'C', '1', '1', 'U', '3', '5'};
 static uint32_t host_id[4] = {0x00000000, 0x00000000, 0x00000000, 0x00000000};
 static uint32_t target_id[4];
 static uint32_t hic_id = DAPLINK_HIC_ID;
@@ -112,8 +112,8 @@ static void setup_basics()
     for (i = 0; i < 32; i++) {
         idx += util_write_hex8(string_host_id + idx, host_id_sha256[i]);
     }    
-
-    string_host_id[idx++] = 0;
+    //Just display 20 character
+    string_host_id[20] = 0;
     // Target ID
     idx = 0;
 
@@ -167,8 +167,12 @@ static void setup_string_descriptor()
 void info_init(void)
 {
     info_crc_compute();
+    id_sha256_buffer[9] = '|';
     read_unique_id(host_id);
-    memcpy(id_sha256_buffer + 8, host_id, 16);
+    for (int i = 0; i < 4; i++)
+    {
+        util_write_hex32((char*)(id_sha256_buffer + 9 + (i * 4 * 2)), host_id[i*4]);
+    }
     calc_sha_256(host_id_sha256, (const void *)id_sha256_buffer, 8 + 16);
     setup_basics();
     setup_unique_id();

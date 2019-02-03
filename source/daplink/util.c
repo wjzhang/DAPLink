@@ -29,7 +29,7 @@
 
 uint32_t util_write_hex8(char *str, uint8_t value)
 {
-    static const char nybble_chars[] = "0123456789abcdef";
+    static const char nybble_chars[] = "0123456789ABCDEF";
     *(str + 0) = nybble_chars[(value >> 4) & 0x0F ];
     *(str + 1) = nybble_chars[(value >> 0) & 0x0F ];
     return 2;
