@@ -167,13 +167,13 @@ static void setup_string_descriptor()
 void info_init(void)
 {
     info_crc_compute();
-    id_sha256_buffer[9] = '|';
+    id_sha256_buffer[8] = '|';
     read_unique_id(host_id);
     for (int i = 0; i < 4; i++)
     {
         util_write_hex32((char*)(id_sha256_buffer + 9 + (i * 4 * 2)), host_id[i*4]);
     }
-    calc_sha_256(host_id_sha256, (const void *)id_sha256_buffer, 8 + 16);
+    calc_sha_256(host_id_sha256, (const void *)id_sha256_buffer, 8 + 1 + 32);
     setup_basics();
     setup_unique_id();
     setup_string_descriptor();
