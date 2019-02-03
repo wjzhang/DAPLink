@@ -52,7 +52,7 @@ uint8_t common_security_bits_set(uint32_t addr, uint8_t *data, uint32_t size)
 uint8_t common_target_set_state(TARGET_RESET_STATE state)
 {
 	if ((gpio_get_config(PIN_CONFIG_DT01) == PIN_HIGH) && (targetID != Target_UNKNOWN)){
-        return swd_set_target_state_hw(state);
+        return swd_set_target_state_hw_sw(state);
     } else {
         return swd_set_target_state_sw(state);        
     }
