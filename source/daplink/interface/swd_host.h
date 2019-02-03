@@ -54,6 +54,8 @@ uint8_t swd_flash_syscall_exec(const program_syscall_t *sysCallParam, uint32_t e
 void swd_set_target_reset(uint8_t asserted);
 uint8_t swd_set_target_state_hw(TARGET_RESET_STATE state);
 uint8_t swd_set_target_state_sw(TARGET_RESET_STATE state);
+uint8_t swd_set_target_state_hw_sw(TARGET_RESET_STATE state);
+
 uint8_t swd_transfer_retry(uint32_t req, uint32_t *data);
 void int2array(uint8_t *res, uint32_t data, uint8_t len);
 
