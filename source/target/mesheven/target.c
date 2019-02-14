@@ -33,43 +33,8 @@ extern const program_target_t stm32f031_flash;
 extern const program_target_t stm32l486_flash;
 extern const program_target_t NRF52_flash;
 extern const program_target_t stm32f301k8_flash;
-
+extern const sector_info_t stm32f405_flash_region[3];
     
-uint32_t nrf51_GetSecNum (uint32_t addr);
-uint32_t nrf51_GetSecAddress(uint32_t sector);
-uint32_t nrf51_GetSecLength(uint32_t sector);
-
-uint32_t stm32f051_GetSecNum (uint32_t addr);
-uint32_t stm32f051_GetSecAddress(uint32_t sector);
-uint32_t stm32f051_GetSecLength(uint32_t sector);
-
-uint32_t stm32f071_GetSecNum (uint32_t addr);
-uint32_t stm32f071_GetSecAddress(uint32_t sector);
-uint32_t stm32f071_GetSecLength(uint32_t sector);
-
-uint32_t stm32f103_GetSecNum (uint32_t addr);
-uint32_t stm32f103_GetSecAddress(uint32_t sector);
-uint32_t stm32f103_GetSecLength(uint32_t sector);
-
-uint32_t stm32f405_GetSecNum (uint32_t addr);
-uint32_t stm32f405_GetSecAddress (uint32_t sector);
-uint32_t stm32f405_GetSecLength (uint32_t sector);
-
-uint32_t stm32f031_GetSecNum (uint32_t addr);
-uint32_t stm32f031_GetSecAddress(uint32_t sector);
-uint32_t stm32f031_GetSecLength(uint32_t sector);
-
-uint32_t stm32l486_GetSecNum (uint32_t addr);
-uint32_t stm32l486_GetSecAddress (uint32_t sector);
-uint32_t stm32l486_GetSecLength (uint32_t sector);
-
-uint32_t nrf52_GetSecNum (uint32_t addr);
-uint32_t nrf52_GetSecAddress(uint32_t sector);
-uint32_t nrf52_GetSecLength(uint32_t sector);
-
-uint32_t stm32f301k8_GetSecNum (uint32_t addr);
-uint32_t stm32f301k8_GetSecAddress(uint32_t sector);
-uint32_t stm32f301k8_GetSecLength(uint32_t sector);
 
 // target information
 const target_cfg_t target_device[] = 
@@ -79,13 +44,13 @@ const target_cfg_t target_device[] =
         .sector_size    = 1024,
         .sector_cnt     = 256,
         .flash_start    = 0x00000000,
-        .flash_end      = 0x10001100,
+        .flash_end      = 0x00040000,
         .ram_start      = 0x20000000,
         .ram_end        = 0x20008000,
         .flash_algo     = (program_target_t *) &NRF51_flash,
-        .get_sector_number = nrf51_GetSecNum,
-        .get_sector_address = nrf51_GetSecAddress,
-        .get_sector_length = nrf51_GetSecLength,
+
+        .extra_flash[0].start = 0x10001000,
+        .extra_flash[0].end   = 0x10001100,
     },
     //stm32f051kX
     {
@@ -96,9 +61,6 @@ const target_cfg_t target_device[] =
         .ram_start      = 0x20000000,
         .ram_end        = 0x20002000,
         .flash_algo     = (program_target_t *) &stm32f051_flash,
-        .get_sector_number = stm32f051_GetSecNum,
-        .get_sector_address = stm32f051_GetSecAddress,
-        .get_sector_length = stm32f051_GetSecLength,        
     },
     //stm32f103rc
     {
@@ -109,9 +71,6 @@ const target_cfg_t target_device[] =
         .ram_start      = 0x20000000,
         .ram_end        = 0x2000C000,
         .flash_algo     = (program_target_t *) &stm32f103_flash,
-        .get_sector_number = stm32f103_GetSecNum,
-        .get_sector_address = stm32f103_GetSecAddress,
-        .get_sector_length = stm32f103_GetSecLength,        
     },
     //stm32f405
     {
@@ -122,9 +81,12 @@ const target_cfg_t target_device[] =
         .ram_start      = 0x20000000,
         .ram_end        = 0x20020000,
         .flash_algo     = (program_target_t *) &stm32f405_flash,
-        .get_sector_number = stm32f405_GetSecNum,
-        .get_sector_address = stm32f405_GetSecAddress,
-        .get_sector_length = stm32f405_GetSecLength,        
+        
+        .sector_info_length = 3,
+        .sectors_info       = stm32f405_flash_region,
+
+        .extra_ram[0].start = 0x10000000,
+        .extra_ram[0].end   = 0x10010000,        
     },
     //stm32f071
     {
@@ -135,9 +97,6 @@ const target_cfg_t target_device[] =
         .ram_start      = 0x20000000,
         .ram_end        = 0x20004000,
         .flash_algo     = (program_target_t *) &stm32f071_flash,
-        .get_sector_number = stm32f071_GetSecNum,
-        .get_sector_address = stm32f071_GetSecAddress,
-        .get_sector_length = stm32f071_GetSecLength,        
     },
     //stm32f031
     {
@@ -148,9 +107,6 @@ const target_cfg_t target_device[] =
         .ram_start      = 0x20000000,
         .ram_end        = 0x20001000,
         .flash_algo     = (program_target_t *) &stm32f031_flash,
-        .get_sector_number = stm32f031_GetSecNum,
-        .get_sector_address = stm32f031_GetSecAddress,
-        .get_sector_length = stm32f031_GetSecLength,        
     },    
     //stm32l486
     {
@@ -161,22 +117,22 @@ const target_cfg_t target_device[] =
         .ram_start      = 0x20000000,
         .ram_end        = 0x20020000,
         .flash_algo     = (program_target_t *) &stm32l486_flash,
-        .get_sector_number = stm32l486_GetSecNum,
-        .get_sector_address = stm32l486_GetSecAddress,
-        .get_sector_length = stm32l486_GetSecLength,        
+        
+        .extra_ram[0].start = 0x10000000,
+        .extra_ram[0].end   = 0x10008000,        
     },
     //nrf52832
     {
         .sector_size    = 4096,
         .sector_cnt     = 512,
         .flash_start    = 0x00000000,
-        .flash_end      = 0x10001210,
+        .flash_end      = 0x00080000,
         .ram_start      = 0x20000000,
         .ram_end        = 0x20010000,
         .flash_algo     = (program_target_t *) &NRF52_flash,
-        .get_sector_number = nrf52_GetSecNum,
-        .get_sector_address = nrf52_GetSecAddress,
-        .get_sector_length = nrf52_GetSecLength,
+
+        .extra_flash[0].start = 0x10001000,
+        .extra_flash[0].end   = 0x10001400,     
     },
     //stm32f301k8
     {
@@ -186,11 +142,6 @@ const target_cfg_t target_device[] =
         .flash_end      = 0x08010000,  // 64KB
         .ram_start      = 0x20000000,
         .ram_end        = 0x20004000,  // 16KB
-        .flash_algo     = (program_target_t *) &stm32f301k8_flash,
-        
-        .get_sector_number = stm32f301k8_GetSecNum,
-        .get_sector_address = stm32f301k8_GetSecAddress,
-        .get_sector_length = stm32f301k8_GetSecLength,        
-    },
-		
+        .flash_algo     = (program_target_t *) &stm32f301k8_flash,               
+    },		
 };

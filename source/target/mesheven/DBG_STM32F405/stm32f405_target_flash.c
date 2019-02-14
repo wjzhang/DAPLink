@@ -22,6 +22,7 @@
 #include <RTL.h>
 
 
+
 static const uint32_t STM32F405_FLM[] = {
     0xE00ABE00, 0x062D780D, 0x24084068, 0xD3000040, 0x1E644058, 0x1C49D1FA, 0x2A001E52, 0x4770D1F2,		/*0x0020*/
     
@@ -60,58 +61,19 @@ const program_target_t stm32f405_flash = {
     0x000001B0,               // algo_size
     STM32F405_FLM,            // image
     512,                     // ram_to_flash_bytes_to_be_written
-    16384,                       // flash sector size : 16KB/64KB/128KB
-    512,                       // auto increment page size
-    0x08000000                 // flash base address
 };
 
-uint32_t stm32f405_GetSecNum (uint32_t addr) {
-	uint32_t rc = 0xFFFFFFFF;
-	if (addr >= 0x08000000 && addr < 0x08010000)
-	{
-		rc = (addr - 0x08000000)/0x4000;
-	}
-	else if (addr >= 0x08010000 && addr < 0x08020000)
-	{
-		rc = 4;
-	}
-	else if (addr >= 0x08020000 && addr < 0x08100000)
-	{
-		rc = 5 + (addr - 0x08020000)/0x20000;
-	}
-	return rc;
-}
-
-uint32_t stm32f405_GetSecAddress (uint32_t sector) {
-	uint32_t rc  = 0x08000000;
-	if (sector < 4)
-	{
-		rc += 0x4000 * sector;
-	}
-	else if (sector == 4)
-	{
-		rc += 0x10000;
-	}
-	else
-	{
-		rc += (sector-4)*0x20000;
-	}
-	return rc;
-}
-
-uint32_t stm32f405_GetSecLength (uint32_t sector) {
-	uint32_t rc  = 0;
-	if(sector < 4)
-	{
-		rc = 0x4000;  //16KB
-	}
-	else if(sector == 4)
-	{
-		rc = 0x10000;  //64KB
-	}
-	else
-	{
-		rc = 0x20000;  //128KB
-	}
-	return rc;
-}
+const sector_info_t stm32f405_flash_region[3] = {
+    {
+        0x08000000,  // start
+        0x4000       // size
+    },
+    {
+        0x08010000, // start
+        0x10000     // size
+    },
+    {
+        0x08020000, // start
+        0x20000     // size
+    }    
+};

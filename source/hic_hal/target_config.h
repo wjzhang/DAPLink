@@ -66,11 +66,6 @@ typedef struct target_cfg {
     int sector_info_length;
     region_info_t extra_flash[MAX_EXTRA_FLASH_REGION + 1]; //!< Extra flash regions.
     region_info_t extra_ram[MAX_EXTRA_RAM_REGION + 1]; //!< Extra RAM regions.
-
-    uint32_t (*get_sector_number)(uint32_t addr);  // convert flash address to sector number
-    uint32_t (*get_sector_address)(uint32_t sector);  //convert sector number to flash address
-    uint32_t (*get_sector_length)(uint32_t sector);  //get sector size. (some device has difference sector size)
-
 } target_cfg_t;
 
 extern const target_cfg_t target_device[];

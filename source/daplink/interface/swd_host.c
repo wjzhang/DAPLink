@@ -936,8 +936,6 @@ uint8_t swd_init_get_target(void)
     // init dap state with fake values
     dap_state.select = 0xffffffff;
     dap_state.csw = 0xffffffff;
-    
-    swd_init();
 
     if (gpio_get_config(PIN_CONFIG_DT01) == PIN_HIGH) {
         //add Reset Pin
@@ -945,6 +943,8 @@ uint8_t swd_init_get_target(void)
         os_dly_wait(1);
         swd_set_target_reset(0);
     }
+    
+    swd_init();
     //need wait 500us
     for( i = 0; i < 1200; i++) {}
 
@@ -993,14 +993,7 @@ uint8_t swd_init_get_target(void)
     if (!swd_write_word(DBG_EMCR, VC_CORERESET)) {
         return Target_UNKNOWN;
     }  
-
-    // use hardware reset for STM32L486
-    if (gpio_get_config(PIN_CONFIG_DT01) == PIN_HIGH) {    
-        swd_set_target_reset(1);
-        os_dly_wait(1);
-        swd_set_target_reset(0);
-    }        
-
+     
     // Wait until core is halted
     do {
         if (!swd_read_word(DBG_HCSR, &tmp)) {
@@ -1281,7 +1274,7 @@ uint8_t swd_set_target_state_sw(TARGET_RESET_STATE state)
 //            os_dly_wait(2);
 //            swd_set_target_reset(0);
 //            os_dly_wait(2);
-//            swd_off();
+            swd_off();
         
             if (!swd_init_debug()) {
                 return 0;
@@ -1424,150 +1417,5 @@ uint8_t swd_set_target_state_sw(TARGET_RESET_STATE state)
     return 1;
 }
 
-uint8_t swd_set_target_state_hw_sw(TARGET_RESET_STATE state)
-{
-    uint32_t val;
-    int8_t ap_retries = 2;
-    /* Calling swd_init prior to entering RUN state causes operations to fail. */
-    if (state != RUN) {
-        swd_init();
-    }
-
-    switch (state) {
-        case RESET_HOLD:
-            swd_set_target_reset(1);
-            break;
-
-        case RESET_RUN:
-            swd_set_target_reset(1);
-            os_dly_wait(2);
-            swd_set_target_reset(0);
-            os_dly_wait(2);
-            swd_off();
-            break;
-
-        case RESET_PROGRAM:
-            swd_set_target_reset(1);
-            os_dly_wait(2);
-            swd_set_target_reset(0);
-            os_dly_wait(2);
-
-            if (!swd_init_debug()) {
-                return 0;
-            }
-
-            // Enable debug
-            while(swd_write_word(DBG_HCSR, DBGKEY | C_DEBUGEN) == 0) {
-                if( --ap_retries <=0 )
-                return 0;
-                // Target is in invalid state?
-                swd_set_target_reset(1);
-                os_dly_wait(2);
-                swd_set_target_reset(0);
-                os_dly_wait(2);
-            }
-
-            // Enable halt on reset
-            if (!swd_write_word(DBG_EMCR, VC_CORERESET)) {
-                return 0;
-            }
-
-            // Perform a soft reset
-            if (!swd_read_word(NVIC_AIRCR, &val)) {
-                return 0;
-            }
-
-            if (!swd_write_word(NVIC_AIRCR, VECTKEY | (val & SCB_AIRCR_PRIGROUP_Msk) | SOFT_RESET)) {
-                return 0;
-            }
-
-            // Reset again
-            swd_set_target_reset(1);
-            os_dly_wait(2);
-            swd_set_target_reset(0);
-            os_dly_wait(2);
-
-            do {
-                if (!swd_read_word(DBG_HCSR, &val)) {
-                    return 0;
-                }
-            } while ((val & S_HALT) == 0);
-
-           
-            // Disable halt on reset
-            if (!swd_write_word(DBG_EMCR, 0)) {
-                return 0;
-            }
-
-            break;
-
-        case NO_DEBUG:
-            if (!swd_write_word(DBG_HCSR, DBGKEY)) {
-                return 0;
-            }
-
-            break;
-
-        case DEBUG:
-            if (!JTAG2SWD()) {
-                return 0;
-            }
-
-            if (!swd_clear_errors()) {
-                return 0;
-            }
-
-            // Ensure CTRL/STAT register selected in DPBANKSEL
-            if (!swd_write_dp(DP_SELECT, 0)) {
-                return 0;
-            }
-
-            // Power up
-            if (!swd_write_dp(DP_CTRL_STAT, CSYSPWRUPREQ | CDBGPWRUPREQ)) {
-                return 0;
-            }
-
-            // Enable debug
-            if (!swd_write_word(DBG_HCSR, DBGKEY | C_DEBUGEN)) {
-                return 0;
-            }
-
-            break;
-
-        case HALT:
-            if (!swd_init_debug()) {
-                return 0;
-            }
-
-            // Enable debug and halt the core (DHCSR <- 0xA05F0003)
-            if (!swd_write_word(DBG_HCSR, DBGKEY | C_DEBUGEN | C_HALT)) {
-                return 0;
-            }
-
-            // Wait until core is halted
-            do {
-                if (!swd_read_word(DBG_HCSR, &val)) {
-                    return 0;
-                }
-            } while ((val & S_HALT) == 0);
-            break;
-
-        case RUN:
-            if (!swd_write_word(DBG_HCSR, DBGKEY)) {
-                return 0;
-            }
-            swd_off();
-            break;
-
-        case POST_FLASH_RESET:
-            // This state should be handled in target_reset.c, nothing needs to be done here.
-            break;
-
-        default:
-            return 0;
-    }
-
-    return 1;
-}
 
 #endif
