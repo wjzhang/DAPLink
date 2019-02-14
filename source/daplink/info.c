@@ -117,16 +117,8 @@ static void setup_basics()
     string_host_id[idx] = '|';
     // add LPC11U35
     idx = 25;
-    memcpy(string_host_id + idx, id_sha256_buffer, 8);
-    idx += 8;
-    // add "|" 
-    string_host_id[idx] = '|';
-    idx += 1;
-    // add serial number
-    for (int i = 0; i < 4; i++)
-    {
-        idx += util_write_hex32(string_host_id + idx, host_id[i]);
-    }
+    memcpy(string_host_id + idx, id_sha256_buffer, 8 + 1 + 32);
+    idx += 8 + 1 + 32;
     // terminated string
     string_host_id[idx] = 0x00;
     
