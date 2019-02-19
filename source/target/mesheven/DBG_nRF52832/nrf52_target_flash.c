@@ -55,20 +55,5 @@ const program_target_t NRF52_flash = {
     0x000000F0,               // algo_size
     nRF52832AA_FLM,           // image
     512,                       // ram_to_flash_bytes_to_be_written
-    1024,                       // flash sector size
-    1024,                       // auto increment page size
-    0x00000000                 // flash base address
 };
-
-uint32_t nrf52_GetSecNum (uint32_t addr){
-    return (addr >> 12);  
-}
-
-uint32_t nrf52_GetSecAddress(uint32_t sector){
-    return (sector << 12);
-}
-
-uint32_t nrf52_GetSecLength(uint32_t sector){
-    return 0x1000; //4096
-}
 

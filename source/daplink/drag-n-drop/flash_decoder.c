@@ -324,6 +324,19 @@ error_t flash_decoder_close(void)
     return status;
 }
 
+static uint32_t check_extra_flash_end(uint32_t normalend)
+{
+    int index = 0;
+    uint32_t rc = normalend;
+    while (!(target_device[targetID].extra_flash[index].start == 0 && target_device[targetID].extra_flash[index].end == 0)) {
+        if (rc < target_device[targetID].extra_flash[index].end) {
+            rc = target_device[targetID].extra_flash[index].end;
+        }
+        index++;
+    }
+    return rc;
+}
+
 static bool flash_decoder_is_at_end(uint32_t addr, const uint8_t *data, uint32_t size)
 {
     uint32_t end_addr;
@@ -339,6 +352,8 @@ static bool flash_decoder_is_at_end(uint32_t addr, const uint8_t *data, uint32_t
 
         case FLASH_DECODER_TYPE_TARGET:
             end_addr = target_device[targetID].flash_end;
+            // need add check extra_flash
+            end_addr = check_extra_flash_end(end_addr);        
             break;
 
         default:

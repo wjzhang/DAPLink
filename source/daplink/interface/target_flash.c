@@ -64,7 +64,7 @@ static state_t state = STATE_CLOSED;
 
 const flash_intf_t *const flash_intf_target = &flash_intf;
 
-static uint32_t lastEraseSectorNumber = 0xFFFFFFFF;
+
 static error_t target_flash_init()
 {
     if (targetID == Target_UNKNOWN) {
@@ -73,7 +73,6 @@ static error_t target_flash_init()
     
     const program_target_t *const flash = target_device[targetID].flash_algo;
 
-    lastEraseSectorNumber = 0xFFFFFFFF;
 
     if (0 == target_set_state(RESET_PROGRAM)) {
         return ERROR_RESET;
@@ -124,19 +123,6 @@ static error_t target_flash_program_page(uint32_t addr, const uint8_t *buf, uint
 
     while (size > 0) {
         uint32_t write_size = MIN(size, flash->program_buffer_size);
-        uint32_t nextSectorAddress = 0;
-        uint32_t currentSectorNumber = target_device[targetID].get_sector_number(addr);
-        if (currentSectorNumber != lastEraseSectorNumber) {
-            if(ERROR_SUCCESS != target_flash_erase_sector(addr)){
-                return ERROR_ERASE_SECTOR;
-            }						
-            lastEraseSectorNumber = currentSectorNumber;
-        }
-          //check is cross sectors
-        nextSectorAddress = target_device[targetID].get_sector_address(currentSectorNumber) + target_device[targetID].get_sector_length(currentSectorNumber);
-        if((addr + write_size)  >  nextSectorAddress){
-            write_size = nextSectorAddress - addr;
-        }
 
         // Write page to buffer
         if (!swd_write_memory(flash->program_buffer, (uint8_t *)buf, write_size)) {
@@ -199,15 +185,11 @@ static error_t target_flash_erase_sector(uint32_t addr)
     
     const program_target_t *const flash = target_device[targetID].flash_algo;
 
-//    // Check to make sure the address is on a sector boundary
-//    if ((addr % target_flash_erase_sector_size(addr)) != 0) {
-//        return ERROR_ERASE_SECTOR;
-//    }
+    // Check to make sure the address is on a sector boundary
+    if ((addr % target_flash_erase_sector_size(addr)) != 0) {
+        return ERROR_ERASE_SECTOR;
+    }
     
-    // get sector boundary address
-    uint32_t sector = target_device[targetID].get_sector_number(addr);
-    addr = target_device[targetID].get_sector_address(sector);
-
     if (0 == swd_flash_syscall_exec(&flash->sys_call_s, flash->erase_sector, addr, 0, 0, 0)) {
         return ERROR_ERASE_SECTOR;
     }
@@ -248,7 +230,7 @@ static uint32_t target_flash_program_page_min_size(uint32_t addr)
 static uint32_t target_flash_erase_sector_size(uint32_t addr)
 {
     if (targetID == Target_UNKNOWN) {
-        return 0;
+        return 512;  // set 512 bytes
 	}    
     if(target_device[targetID].sector_info_length > 0) { 
         int sector_index = target_device[targetID].sector_info_length - 1;

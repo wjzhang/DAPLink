@@ -52,7 +52,7 @@ static uint32_t crc_config_user;
 static char string_unique_id[64 + 1];
 static char string_mac[12 + 1];
 static char string_board_id[4 + 1];
-static char string_host_id[64 + 1];
+static char string_host_id[128 + 1];   // 24 + 1 + 8 + 1 + 32 = 66
 static char string_target_id[32 + 1];
 static char string_hic_id[8 + 1];
 static char string_version[4 + 1];
@@ -108,12 +108,20 @@ static void setup_basics()
     memset(string_board_id, 0, sizeof(string_board_id));
     // Host ID
     idx = 0;
-
+    //Just display 24 character, but full added
     for (i = 0; i < 32; i++) {
         idx += util_write_hex8(string_host_id + idx, host_id_sha256[i]);
     }    
-    //Just display 24 character
-    string_host_id[24] = 0;
+    // add "|" 
+    idx = 24;
+    string_host_id[idx] = '|';
+    // add LPC11U35
+    idx = 25;
+    memcpy(string_host_id + idx, id_sha256_buffer, 8 + 1 + 32);
+    idx += 8 + 1 + 32;
+    // terminated string
+    string_host_id[idx] = 0x00;
+    
     // Target ID
     idx = 0;
 
@@ -171,7 +179,7 @@ void info_init(void)
     read_unique_id(host_id);
     for (int i = 0; i < 4; i++)
     {
-        util_write_hex32((char*)(id_sha256_buffer + 9 + (i * 4 * 2)), host_id[i*4]);
+        util_write_hex32((char*)(id_sha256_buffer + 9 + (i * 4 * 2)), host_id[i]);
     }
     calc_sha_256(host_id_sha256, (const void *)id_sha256_buffer, 8 + 1 + 32);
     setup_basics();

@@ -58,22 +58,6 @@ const program_target_t stm32f051_flash = {
     0x00000180,               // algo_size
     STM32F051_FLM,          // image
     1024,                   // ram_to_flash_bytes_to_be_written
-    1024,                       // flash sector size: 1KB
-    1024,                       // auto increment page size
-    0x08000000                 // flash base address
 };
 
-uint32_t stm32f051_GetSecNum (uint32_t addr){
-    uint32_t rc = ( (addr - 0x08000000) >> 10); 
-    return rc;
-}
-
-uint32_t stm32f051_GetSecAddress(uint32_t sector){
-    uint32_t rc = 0x08000000 + (sector << 10);
-    return rc;
-}
-
-uint32_t stm32f051_GetSecLength(uint32_t sector){
-    return 0x400; //1024
-}
 
