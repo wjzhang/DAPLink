@@ -33,6 +33,7 @@ extern const program_target_t stm32f031_flash;
 extern const program_target_t stm32l486_flash;
 extern const program_target_t NRF52_flash;
 extern const program_target_t stm32f301k8_flash;
+extern const program_target_t lpc11u35_flash;
 extern const sector_info_t stm32f405_flash_region[3];
     
 
@@ -143,5 +144,18 @@ const target_cfg_t target_device[] =
         .ram_start      = 0x20000000,
         .ram_end        = 0x20004000,  // 16KB
         .flash_algo     = (program_target_t *) &stm32f301k8_flash,               
-    },		
+    },
+    //lpc11u35
+    {
+        .sector_size    = 4096,
+        .sector_cnt     = 16,
+        .flash_start    = 0x00000000,
+        .flash_end      = 0x00010000,  // 64KB
+        .ram_start      = 0x10000000,
+        .ram_end        = 0x10002000,  // 8KB
+        .flash_algo     = (program_target_t *) &lpc11u35_flash,
+
+        .extra_ram[0].start = 0x20000000,
+        .extra_ram[0].end   = 0x20000800, 
+    },    
 };

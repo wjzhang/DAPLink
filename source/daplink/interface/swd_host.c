@@ -916,7 +916,14 @@ static uint8_t get_target_id(uint32_t coreid)
                 } else if (tmp == 0x55AA55AA) {
                     rc = Target_NRF51822;
                 } else {
-                    rc = Target_UNKNOWN;
+                    // check is LPC11U35
+                    if (!swd_read_word(0x400483F8, &tmp)) {
+                        rc = Target_UNKNOWN;
+                    } else if (tmp == 0x0000BC40) {
+                        rc = Target_LPC11U35;
+                    } else {
+                        rc = Target_UNKNOWN;
+                    }
                 }
             }else{
                 rc = Target_UNKNOWN;
