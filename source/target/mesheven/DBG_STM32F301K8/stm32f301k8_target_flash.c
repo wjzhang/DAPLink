@@ -59,21 +59,4 @@ const program_target_t stm32f301k8_flash = {
     0x00000184,               // algo_size
     STM32F301K8_FLM,          // image
     2048,                   // ram_to_flash_bytes_to_be_written
-    2048,                       // flash sector size: 2KB
-    2048,                       // auto increment page size
-    0x08000000                 // flash base address
 };
-
-uint32_t stm32f301k8_GetSecNum (uint32_t addr){
-    uint32_t rc = ( (addr - 0x08000000) >> 11); 
-    return rc;
-}
-
-uint32_t stm32f301k8_GetSecAddress(uint32_t sector){
-    uint32_t rc = 0x08000000 + (sector << 11);
-    return rc;
-}
-
-uint32_t stm32f301k8_GetSecLength(uint32_t sector){
-    return 0x800;  //2048
-}

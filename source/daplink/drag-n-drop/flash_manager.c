@@ -178,6 +178,10 @@ error_t flash_manager_data(uint32_t addr, const uint8_t *data, uint32_t size)
                 state = STATE_ERROR;
                 return status;
             }
+            // check is at sector boundary
+            if (addr != current_write_block_addr) {
+                current_write_block_addr = addr & 0xFFFFFFF0;  // 16 bytes alignment
+            }
         }
 
         // write buffer
