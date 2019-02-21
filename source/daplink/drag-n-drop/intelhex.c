@@ -120,7 +120,8 @@ hexfile_parse_status_t parse_hex_blob(const uint8_t *hex_blob, const uint32_t he
         switch ((uint8_t)(*hex_blob)) {
             // we've hit the end of an ascii line
             // junk we dont care about could also just run the validate_checksum on &line
-            //case '\r': // fixed  receive last byte 0x0A in another one package when get hex end of file Tag
+            case '\r': // fixed  receive last byte 0x0A in another one package when get hex end of file Tag
+                break;
             case '\n':
                 if (0 == validate_checksum(&line)) {
                     status = HEX_PARSE_CKSUM_FAIL;
