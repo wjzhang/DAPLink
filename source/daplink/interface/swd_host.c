@@ -1117,7 +1117,7 @@ uint32_t swd_get_target_uniqueid(uint32_t *pbuffer, uint32_t len)
              //break;            
      }
      // read unique id
-     for(uint32_t i = 0; i < size; i++) {
+     for(int32_t i = size - 1; i >= 0; i--) {
             swd_read_word(idaddress + i * 4, &data);
             *pbuffer++ = data; 
      }
@@ -1451,7 +1451,7 @@ static uint32_t swd_get_target_lpc11u35_uniqueid(uint32_t *pbuffer, uint32_t len
     }
 
     // read unique id
-    for(uint32_t i = 0; i < 4; i++) {
+    for(int32_t i = 3; i >= 0; i--) {
         swd_read_word(0x10000100 + 0x18 + i * 4, &data);
         *pbuffer++ = data; 
     }
