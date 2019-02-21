@@ -26,7 +26,8 @@ enum Target_IDs
     Target_STM32F031 = 5,    
     Target_STM32L486 = 6,
     Target_NRF52832  = 7,
-    Target_STM32F301K8 = 8,      
+    Target_STM32F301K8 = 8,
+    Target_LPC11U35 = 9,    
     Target_UNKNOWN   = 0xFF
 };
 
