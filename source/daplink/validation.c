@@ -23,7 +23,6 @@
 #include "string.h"
 #include "target_config.h"
 
-#include "target_ids.h"
 
 static inline uint32_t test_range(const uint32_t test, const uint32_t min, const uint32_t max)
 {
@@ -42,13 +41,10 @@ __weak uint8_t validate_bin_nvic(const uint8_t *buf)
     // test the initial SP value
     memcpy(&nvic_val, buf + 0, sizeof(nvic_val));
 
-    if (targetID == Target_UNKNOWN) {
-        return 0;
-	}
 
-    if (0 == test_range(nvic_val, target_device[targetID].ram_start, target_device[targetID].ram_end)) {
-        while (!(target_device[targetID].extra_ram[index].start == 0 && target_device[targetID].extra_ram[index].end == 0)) { //try additional reqions if present
-            if (1 == test_range(nvic_val, target_device[targetID].extra_ram[index].start, target_device[targetID].extra_ram[index].end)) {
+    if (0 == test_range(nvic_val, target_device.ram_start, target_device.ram_end)) {
+        while (!(target_device.extra_ram[index].start == 0 && target_device.extra_ram[index].end == 0)) { //try additional reqions if present
+            if (1 == test_range(nvic_val, target_device.extra_ram[index].start, target_device.extra_ram[index].end)) {
                 in_range = 1;
                 break;
             }
@@ -66,10 +62,10 @@ __weak uint8_t validate_bin_nvic(const uint8_t *buf)
     // HardFault_Handler
     for (; i <= 12; i += 4) {
         memcpy(&nvic_val, buf + i, sizeof(nvic_val));
-        if (0 == test_range(nvic_val, target_device[targetID].flash_start, target_device[targetID].flash_end)) {
+        if (0 == test_range(nvic_val, target_device.flash_start, target_device.flash_end)) {
             index = 0, in_range = 0;
-            while (!(target_device[targetID].extra_flash[index].start == 0 && target_device[targetID].extra_flash[index].end == 0)) { //try additional reqions if present
-                if (1 == test_range(nvic_val, target_device[targetID].extra_flash[index].start, target_device[targetID].extra_flash[index].end)) {
+            while (!(target_device.extra_flash[index].start == 0 && target_device.extra_flash[index].end == 0)) { //try additional reqions if present
+                if (1 == test_range(nvic_val, target_device.extra_flash[index].start, target_device.extra_flash[index].end)) {
                     in_range = 1;
                     break;
                 }

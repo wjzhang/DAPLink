@@ -26,7 +26,7 @@
 #include "target_config.h"
 #include "board.h"
 #include "read_uid.h"
-#include "virtual_fs.h"
+//#include "virtual_fs.h"
 #include "util.h"
 #include "crc.h"
 #include "daplink.h"
@@ -121,7 +121,7 @@ static void setup_basics()
     idx += 8 + 1 + 32;
     // terminated string
     string_host_id[idx] = 0x00;
-    
+
     // Target ID
     idx = 0;
 

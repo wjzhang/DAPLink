@@ -62,17 +62,13 @@ typedef struct target_cfg {
     uint32_t ram_end;               /*!< Highest contigous RAM address the application uses */
     program_target_t *flash_algo;   /*!< A pointer to the flash algorithm structure */
     uint8_t erase_reset;            /*!< Reset after performing an erase */
-    const sector_info_t* sectors_info; 
+    sector_info_t* const sectors_info; 
     int sector_info_length;
     region_info_t extra_flash[MAX_EXTRA_FLASH_REGION + 1]; //!< Extra flash regions.
     region_info_t extra_ram[MAX_EXTRA_RAM_REGION + 1]; //!< Extra RAM regions.
 } target_cfg_t;
 
-extern const target_cfg_t target_device[];
-extern uint8_t targetID;
-uint8_t swd_init_get_target(void);
-uint8_t swd_init_get_target_no_resetandhalt(void);
-uint32_t swd_get_target_uniqueid(uint32_t *pbuffer, uint32_t len);
+extern target_cfg_t target_device;
 
 #ifdef __cplusplus
 }

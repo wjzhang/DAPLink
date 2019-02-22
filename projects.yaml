@@ -23,7 +23,7 @@ module:
         - *module_tools
         - records/usb/usb-core.yaml
         - records/usb/usb-hid.yaml
-        - records/usb/usb-msc.yaml
+        #- records/usb/usb-msc.yaml
         - records/usb/usb-cdc.yaml
         - records/usb/usb-webusb.yaml
         - records/usb/usb-winusb.yaml
@@ -493,4 +493,8 @@ projects:
     lpc11u35_multi_targets_if:
         - *module_if
         - *module_hic_lpc11u35
-        - records/board/mesh_multi_targets.yaml 
+        - records/board/mesh_multi_targets.yaml
+    lpc11u35_no_targets_if:
+        - *module_if
+        - *module_hic_lpc11u35
+        - records/board/mesh_no_targets.yaml  

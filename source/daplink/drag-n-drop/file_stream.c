@@ -114,7 +114,7 @@ stream_type_t stream_start_identify(const uint8_t *data, uint32_t size)
 }
 
 // Identify the file type from its extension
-stream_type_t stream_type_from_name(const vfs_filename_t filename)
+stream_type_t stream_type_from_name(const char * filename)
 {
     // 8.3 file names must be in upper case
     if (0 == strncmp("BIN", &filename[8], 3)) {

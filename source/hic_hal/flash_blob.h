@@ -35,23 +35,24 @@ typedef struct {
 } program_syscall_t;
 
 typedef struct {
-    const uint32_t  init;
-    const uint32_t  uninit;
-    const uint32_t  erase_chip;
-    const uint32_t  erase_sector;
-    const uint32_t  program_page;
-    const uint32_t  verify;
-    const program_syscall_t sys_call_s;
-    const uint32_t  program_buffer;
-    const uint32_t  algo_start;
-    const uint32_t  algo_size;
+    uint32_t  init;
+    uint32_t  uninit;
+    uint32_t  erase_chip;
+    uint32_t  erase_sector;
+    uint32_t  program_page;
+    uint32_t  verify;
+    program_syscall_t sys_call_s;
+    uint32_t  program_buffer;
+    uint32_t  algo_start;
+    uint32_t  algo_size;
     const uint32_t *algo_blob;
-    const uint32_t  program_buffer_size;   
+    const uint32_t  program_buffer_size;
+    uint32_t  hardware_reset_support;
 } program_target_t;
 
 typedef struct {
-    const uint32_t start;
-    const uint32_t size;
+    uint32_t start;
+    uint32_t size;
 } sector_info_t;
 
 #ifdef __cplusplus

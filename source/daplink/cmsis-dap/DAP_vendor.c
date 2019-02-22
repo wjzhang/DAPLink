@@ -39,9 +39,13 @@
 #include "target_config.h"
 #include "read_uid.h"
 #include "gpio.h"
-#include "target_ids.h"
 
 void main_identification_led(uint16_t time);
+error_t target_flash_algorithm_open(const uint8_t *data, uint32_t size);
+error_t target_flash_algorithm_write(const uint8_t *data, uint32_t size);
+error_t target_flash_algorithm_close(void);
+error_t target_flash_basic_configure(const uint8_t *data, uint32_t size);
+error_t target_flash_advance_configure(const uint8_t *data, uint32_t size);
 
 //**************************************************************************************************
 /**
@@ -140,10 +144,6 @@ uint32_t DAP_ProcessVendorCommand(const uint8_t *request, uint8_t *response) {
         break;
     }
     case ID_DAP_Vendor10: {
-        // check target is known
-        if ( targetID == Target_UNKNOWN ) {
-            targetID = swd_init_get_target();
-        }
         // open mass storage device stream
         *response = stream_open((stream_type_t)(*request));
         num += (1 << 16) | 1;
@@ -152,7 +152,6 @@ uint32_t DAP_ProcessVendorCommand(const uint8_t *request, uint8_t *response) {
     case ID_DAP_Vendor11: {
         // close mass storage device stream
         *response = stream_close();
-        targetID = Target_UNKNOWN;
         num += 1;
         break;
     }
@@ -164,11 +163,44 @@ uint32_t DAP_ProcessVendorCommand(const uint8_t *request, uint8_t *response) {
         num += ((write_len + 1) << 16) | 1;
         break;
     }
-    case ID_DAP_Vendor13: break;
-    case ID_DAP_Vendor14: break;
-    case ID_DAP_Vendor15: break;
-    case ID_DAP_Vendor16: break;
-    case ID_DAP_Vendor17: break;
+    case ID_DAP_Vendor13: {
+        // write flash basic config
+        uint32_t write_len = *request;
+        request++;
+        *response = target_flash_basic_configure((uint8_t *)request, write_len);
+        num += ((write_len + 1) << 16) | 1;     
+        break;
+    }
+    case ID_DAP_Vendor14: {
+        // write flash advance config
+        uint32_t write_len = *request;
+        request++;
+        *response = target_flash_advance_configure((uint8_t *)request, write_len);
+        num += ((write_len + 1) << 16) | 1;     
+        break;
+    }    
+    case ID_DAP_Vendor15: {
+        // start write flash algorithm blob info
+        uint32_t write_len = *request;
+        request++;
+        *response = target_flash_algorithm_open((uint8_t *)request, write_len);
+        num += ((write_len + 1) << 16) | 1;        
+        break;
+    }
+    case ID_DAP_Vendor16: {
+        // write flash algorithm blob data
+        uint32_t write_len = *request;
+        request++;
+        *response = target_flash_algorithm_write((uint8_t *)request, write_len);
+        num += ((write_len + 1) << 16) | 1;         
+        break;
+    }
+    case ID_DAP_Vendor17: {
+        // end flash algorithm blob
+        *response = target_flash_algorithm_close();
+        num += 1;
+        break;
+    }
     case ID_DAP_Vendor18: break;
     case ID_DAP_Vendor19: break;
     case ID_DAP_Vendor20: break;
@@ -178,33 +210,8 @@ uint32_t DAP_ProcessVendorCommand(const uint8_t *request, uint8_t *response) {
     case ID_DAP_Vendor24: break;
     case ID_DAP_Vendor25: break;
     case ID_DAP_Vendor26: break;
-    case ID_DAP_Vendor27:
-        {
-            uint32_t uniqueId[4];
-            uint32_t size = 0;       
-            size = swd_get_target_uniqueid(uniqueId, 4);
-        
-            *response++ = size * 4;
-            // Words(32 bits) already MSB first
-            for (int i = 0; i < size; i++) {
-                //memcpy(response, (uint8_t *)uniqueId, size * 4);
-                // Big endian
-                *response++ = (uniqueId[i] >> 24) & 0xFF;
-                *response++ = (uniqueId[i] >> 16) & 0xFF;
-                *response++ = (uniqueId[i] >> 8)  & 0xFF;
-                *response++ =  uniqueId[i]        & 0xFF;               
-            }
-            num += (0 << 16) | (size * 4 + 1);
-        }
-        break;
-    case ID_DAP_Vendor28:
-        {
-            uint8_t targetID = swd_init_get_target_no_resetandhalt();
-            *response++ = 1;
-            *response++ = targetID;
-            num += (0 << 16) | 2;
-        }
-        break;
+    case ID_DAP_Vendor27: break;
+    case ID_DAP_Vendor28: break;
     case ID_DAP_Vendor29:
         {
             uint32_t fullUniqueId[4];
@@ -218,7 +225,7 @@ uint32_t DAP_ProcessVendorCommand(const uint8_t *request, uint8_t *response) {
                 *response++ = (fullUniqueId[i] >> 16) & 0xFF;
                 *response++ = (fullUniqueId[i] >> 8)  & 0xFF;
                 *response++ =  fullUniqueId[i]        & 0xFF;               
-            }            
+            }             
             num += (0 << 16) | 17;
         }
         break;

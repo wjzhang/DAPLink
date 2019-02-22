@@ -137,7 +137,7 @@ error_t flash_decoder_get_flash(flash_decoder_type_t type, uint32_t addr, bool a
                 flash_intf_local = flash_intf_iap_protected;
             }
         } else if (FLASH_DECODER_TYPE_TARGET == type) {
-            flash_start_local = target_device[targetID].flash_start;
+            flash_start_local = target_device.flash_start;
             flash_intf_local = flash_intf_target;
         } else {
             status = ERROR_FD_UNSUPPORTED_UPDATE;
@@ -330,9 +330,9 @@ static uint32_t check_extra_flash_end(uint32_t normalend)
 {
     int index = 0;
     uint32_t rc = normalend;
-    while (!(target_device[targetID].extra_flash[index].start == 0 && target_device[targetID].extra_flash[index].end == 0)) {
-        if (rc < target_device[targetID].extra_flash[index].end) {
-            rc = target_device[targetID].extra_flash[index].end;
+    while (!(target_device.extra_flash[index].start == 0 && target_device.extra_flash[index].end == 0)) {
+        if (rc < target_device.extra_flash[index].end) {
+            rc = target_device.extra_flash[index].end;
         }
         index++;
     }
@@ -353,9 +353,9 @@ static bool flash_decoder_is_at_end(uint32_t addr, const uint8_t *data, uint32_t
             break;
 
         case FLASH_DECODER_TYPE_TARGET:
-            end_addr = target_device[targetID].flash_end;
+            end_addr = target_device.flash_end;
             // need add check extra_flash
-            end_addr = check_extra_flash_end(end_addr);        
+            end_addr = check_extra_flash_end(end_addr);
             break;
 
         default:
