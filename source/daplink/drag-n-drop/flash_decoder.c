@@ -68,7 +68,9 @@ flash_decoder_type_t flash_decoder_detect_type(const uint8_t *data, uint32_t siz
     if (DAPLINK_HIC_ID == info.hic_id) {
         if (DAPLINK_BUILD_KEY_IF == info.build_key) {
             // Interface update
-            return FLASH_DECODER_TYPE_INTERFACE;
+            // No more update inteface self
+            //return FLASH_DECODER_TYPE_INTERFACE;
+            return FLASH_DECODER_TYPE_TARGET;
         } else if (DAPLINK_BUILD_KEY_BL == info.build_key) {
             // Bootloader update
             return FLASH_DECODER_TYPE_BOOTLOADER;

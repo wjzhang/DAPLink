@@ -69,6 +69,7 @@ static const Target_Reset targets[] = {
     {common_target_before_init_debug    , common_target_unlock_sequence    , common_security_bits_set, common_target_set_state       }, //STM32L486
     {common_target_before_init_debug    , common_target_unlock_sequence    , common_security_bits_set, nrf52_target_set_state        }, //nRF52
     {common_target_before_init_debug    , common_target_unlock_sequence    , common_security_bits_set, stm32f301k8_target_set_state  }, //STM32F301K8
+    {common_target_before_init_debug    , common_target_unlock_sequence    , common_security_bits_set, common_target_set_state       }, //LPC11U35
 };
 
 

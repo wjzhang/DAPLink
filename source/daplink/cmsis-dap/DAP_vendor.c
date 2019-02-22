@@ -185,7 +185,15 @@ uint32_t DAP_ProcessVendorCommand(const uint8_t *request, uint8_t *response) {
             size = swd_get_target_uniqueid(uniqueId, 4);
         
             *response++ = size * 4;
-            memcpy(response, (uint8_t *)uniqueId, size * 4);
+            // Words(32 bits) already MSB first
+            for (int i = 0; i < size; i++) {
+                //memcpy(response, (uint8_t *)uniqueId, size * 4);
+                // Big endian
+                *response++ = (uniqueId[i] >> 24) & 0xFF;
+                *response++ = (uniqueId[i] >> 16) & 0xFF;
+                *response++ = (uniqueId[i] >> 8)  & 0xFF;
+                *response++ =  uniqueId[i]        & 0xFF;               
+            }
             num += (0 << 16) | (size * 4 + 1);
         }
         break;
@@ -202,7 +210,15 @@ uint32_t DAP_ProcessVendorCommand(const uint8_t *request, uint8_t *response) {
             uint32_t fullUniqueId[4];
             read_unique_id(fullUniqueId);
             *response++ = 16;
-            memcpy(response, (uint8_t *)fullUniqueId, 16);
+            //memcpy(response, (uint8_t *)fullUniqueId, 16);
+            // Words(32 bits) LSB first
+            for (int i = 3; i >=0; i--) {
+                // Big endian
+                *response++ = (fullUniqueId[i] >> 24) & 0xFF;
+                *response++ = (fullUniqueId[i] >> 16) & 0xFF;
+                *response++ = (fullUniqueId[i] >> 8)  & 0xFF;
+                *response++ =  fullUniqueId[i]        & 0xFF;               
+            }            
             num += (0 << 16) | 17;
         }
         break;

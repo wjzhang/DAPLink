@@ -916,7 +916,14 @@ static uint8_t get_target_id(uint32_t coreid)
                 } else if (tmp == 0x55AA55AA) {
                     rc = Target_NRF51822;
                 } else {
-                    rc = Target_UNKNOWN;
+                    // check is LPC11U35
+                    if (!swd_read_word(0x400483F8, &tmp)) {
+                        rc = Target_UNKNOWN;
+                    } else if (tmp == 0x0000BC40) {
+                        rc = Target_LPC11U35;
+                    } else {
+                        rc = Target_UNKNOWN;
+                    }
                 }
             }else{
                 rc = Target_UNKNOWN;
@@ -1063,6 +1070,7 @@ uint8_t swd_init_get_target_no_resetandhalt(void)
     return get_target_id(tmpid);
 }
 
+uint32_t swd_get_target_lpc11u35_uniqueid(uint32_t *pbuffer, uint32_t len);
 uint32_t swd_get_target_uniqueid(uint32_t *pbuffer, uint32_t len)
 {
      uint32_t idaddress = 0;
@@ -1099,13 +1107,17 @@ uint32_t swd_get_target_uniqueid(uint32_t *pbuffer, uint32_t len)
              size = 3;
              break;
          
+         case Target_LPC11U35:
+             return swd_get_target_lpc11u35_uniqueid(pbuffer, len);
+             break;
+         
          case Target_UNKNOWN:
          default:
              return 0;
              //break;            
      }
      // read unique id
-     for(uint32_t i = 0; i < size; i++) {
+     for(int32_t i = size - 1; i >= 0; i--) {
             swd_read_word(idaddress + i * 4, &data);
             *pbuffer++ = data; 
      }
@@ -1417,5 +1429,33 @@ uint8_t swd_set_target_state_sw(TARGET_RESET_STATE state)
     return 1;
 }
 
+static uint32_t lpc11u35IAPcode[] = {
+        0x6001213A, 0x31144601, 0x231F2200, 0x0212441A, 0x441A23FF, 0x231F0212, 0x0212441A, 0x441A23F1, 0x20004790, 0xBE2A
+};
+
+static uint32_t swd_get_target_lpc11u35_uniqueid(uint32_t *pbuffer, uint32_t len)
+{
+    const program_syscall_t sys_call_s = {0x10000001, 0x10000000, 0x10001000};
+    uint32_t data = 0;
+    // set halt MCU
+    if (0 == target_set_state(HALT)) {
+        return 0;
+    }
+    // download IAP
+    if (0 == swd_write_memory(0x10000000, (uint8_t *)lpc11u35IAPcode, sizeof(lpc11u35IAPcode))) {
+        return 0;
+    }
+    // execute IAP
+    if (0 == swd_flash_syscall_exec(&sys_call_s, 0x10000001, 0x10000100, 0, 0, 0)) {
+        return 0;
+    }
+
+    // read unique id
+    for(int32_t i = 3; i >= 0; i--) {
+        swd_read_word(0x10000100 + 0x18 + i * 4, &data);
+        *pbuffer++ = data; 
+    }
+    return 4;
+}
 
 #endif
