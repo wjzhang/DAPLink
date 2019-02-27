@@ -23,6 +23,8 @@
 ;   <o> Stack Size (in Bytes) <0x0-0xFFFFFFFF:8>
 ; </h>
 
+                GET     meshversion.s
+
 Stack_Size      EQU     0x00000100
 
                 AREA    STACK, NOINIT, READWRITE, ALIGN=3
@@ -55,7 +57,7 @@ __Vectors       DCD     __initial_sp              ; Top of Stack
                 DCD     Reset_Handler             ; Reset Handler
                 DCD     NMI_Handler               ; NMI Handler
                 DCD     HardFault_Handler         ; Hard Fault Handler
-                DCD     0                         ; Reserved
+                DCD     MESHDAPLINK_VERSION       ; Reserved, now put mesheven daplink version
                 DCD     0                         ; Reserved
                 DCD     0                         ; Reserved
                 DCD     0                         ; Reserved
