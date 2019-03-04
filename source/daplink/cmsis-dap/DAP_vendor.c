@@ -211,7 +211,18 @@ uint32_t DAP_ProcessVendorCommand(const uint8_t *request, uint8_t *response) {
     case ID_DAP_Vendor25: break;
     case ID_DAP_Vendor26: break;
     case ID_DAP_Vendor27: break;
-    case ID_DAP_Vendor28: break;
+    case ID_DAP_Vendor28: 
+        {
+            uint32_t version = *(uint32_t *)0x00000010; // Vector index 4
+            *response++ = 4;
+            // Big endian
+            *response++ = (version >> 24) & 0xFF;
+            *response++ = (version >> 16) & 0xFF;
+            *response++ = (version >> 8)  & 0xFF;
+            *response++ =  version        & 0xFF;
+            num += (0 << 16) | 5;
+        }
+        break;
     case ID_DAP_Vendor29:
         {
             uint32_t fullUniqueId[4];
@@ -233,14 +244,14 @@ uint32_t DAP_ProcessVendorCommand(const uint8_t *request, uint8_t *response) {
         {
             uint16_t value = gpio_all_pins();
             *response++ = 2;
-            *response++ =  value       & 0xFF;
             *response++ = (value >> 8) & 0xFF;
+            *response++ =  value       & 0xFF;
             num += (0 << 16) | 3;
         }
         break;
     case ID_DAP_Vendor31:
         {
-            uint16_t time = request[1]  | (request[2] << 8) ;
+            uint16_t time = (request[0] << 8) | request[1]  ;
             main_identification_led(time);
             *response = 1;
             num += (2 << 16) | 1;
