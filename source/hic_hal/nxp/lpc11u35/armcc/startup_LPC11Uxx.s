@@ -47,6 +47,12 @@ __heap_limit
                 PRESERVE8
                 THUMB
 
+; Identifier Table 
+
+                AREA    MESHEVEN, DATA, READONLY, ALIGN=3
+                EXPORT  __Identifier
+__Identifier    SPACE   256                    
+                    
 
 ; Vector Table Mapped to Address 0 at Reset
 
@@ -58,7 +64,7 @@ __Vectors       DCD     __initial_sp              ; Top of Stack
                 DCD     NMI_Handler               ; NMI Handler
                 DCD     HardFault_Handler         ; Hard Fault Handler
                 DCD     MESHDAPLINK_VERSION       ; Reserved, now put mesheven daplink version
-                DCD     0                         ; Reserved
+                DCD     __Identifier              ; Reserved, now put identifer address
                 DCD     0                         ; Reserved
                 DCD     0                         ; Reserved
                 DCD     DAPLINK_BUILD_KEY         ; Build type - BL/IF
