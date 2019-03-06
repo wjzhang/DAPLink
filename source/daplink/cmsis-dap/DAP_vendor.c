@@ -210,7 +210,16 @@ uint32_t DAP_ProcessVendorCommand(const uint8_t *request, uint8_t *response) {
     case ID_DAP_Vendor24: break;
     case ID_DAP_Vendor25: break;
     case ID_DAP_Vendor26: break;
-    case ID_DAP_Vendor27: break;
+    case ID_DAP_Vendor27:
+        {
+            uint32_t idaddr = *(uint32_t *)0x00000014; // Vector index 5
+            uint8_t offset = request[0];
+            uint8_t length = request[1] > 60 ? 60 : request[1];
+            *response++ = length;
+            memcpy(response, (const void *)(idaddr + offset), length);
+            num += (2 << 16) | (length + 1);
+        }
+        break;
     case ID_DAP_Vendor28: 
         {
             uint32_t version = *(uint32_t *)0x00000010; // Vector index 4
