@@ -3,4 +3,10 @@ common:
         - source/daplink/drag-n-drop
     sources:
         drag-n-drop:
-            - source/daplink/drag-n-drop
+            #- source/daplink/drag-n-drop
+            - source/daplink/drag-n-drop/file_stream.c
+            - source/daplink/drag-n-drop/flash_decoder.c
+            - source/daplink/drag-n-drop/flash_intf.c
+            - source/daplink/drag-n-drop/flash_manager.c
+            - source/daplink/drag-n-drop/iap_flash_intf.c
+            - source/daplink/drag-n-drop/intelhex.c

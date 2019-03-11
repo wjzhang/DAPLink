@@ -24,7 +24,7 @@
 
 #include "stdint.h"
 
-#include "virtual_fs.h"
+//#include "virtual_fs.h"
 #include "error.h"
 
 #ifdef __cplusplus
@@ -48,7 +48,7 @@ typedef enum {
 stream_type_t stream_start_identify(const uint8_t *data, uint32_t size);
 
 // Stateless function to identify a filestream by its name
-stream_type_t stream_type_from_name(const vfs_filename_t filename);
+stream_type_t stream_type_from_name(const char * filename);
 
 error_t stream_open(stream_type_t stream_type);
 
