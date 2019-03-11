@@ -25,10 +25,11 @@
 #include "util.h"
 #include "macro.h"
 #include "daplink.h"
-#include "validation.h"
 #include "flash_manager.h"
 #include "target_config.h"  // for target_device
 #include "settings.h"       // for config_get_automation_allowed
+#include "validation.h"
+#include "target_board.h"
 
 // Set to 1 to enable debugging
 #define DEBUG_FLASH_DECODER     0
@@ -55,6 +56,7 @@ static uint32_t initial_addr;
 static uint32_t current_addr;
 static bool flash_initialized;
 static bool initial_addr_set;
+static bool flash_type_target_bin;
 
 static bool flash_decoder_is_at_end(uint32_t addr, const uint8_t *data, uint32_t size);
 
@@ -64,7 +66,9 @@ flash_decoder_type_t flash_decoder_detect_type(const uint8_t *data, uint32_t siz
     util_assert(size >= FLASH_DECODER_MIN_SIZE);
     // Check if this is a daplink image
     memcpy(&info, data + DAPLINK_INFO_OFFSET, sizeof(info));
-
+    if(!addr_valid){ //reset until we know the binary type
+        flash_type_target_bin = false;
+    }
     if (DAPLINK_HIC_ID == info.hic_id) {
         if (DAPLINK_BUILD_KEY_IF == info.build_key) {
             // Interface update
@@ -81,6 +85,9 @@ flash_decoder_type_t flash_decoder_detect_type(const uint8_t *data, uint32_t siz
 
     // Check if a valid vector table for the target can be found
     if (validate_bin_nvic(data)) {
+        if(!addr_valid){ //binary is a bin type
+            flash_type_target_bin = true;
+        }
         return FLASH_DECODER_TYPE_TARGET;
     }
 
@@ -137,8 +144,12 @@ error_t flash_decoder_get_flash(flash_decoder_type_t type, uint32_t addr, bool a
                 flash_intf_local = flash_intf_iap_protected;
             }
         } else if (FLASH_DECODER_TYPE_TARGET == type) {
-            flash_start_local = target_device.flash_start;
-            flash_intf_local = flash_intf_target;
+            if (g_board_info.target_cfg) {
+                flash_start_local = g_board_info.target_cfg->flash_start;
+                flash_intf_local = flash_intf_target;
+            } else {
+                status = ERROR_FD_UNSUPPORTED_UPDATE;
+            }
         } else {
             status = ERROR_FD_UNSUPPORTED_UPDATE;
         }
@@ -351,11 +362,17 @@ static bool flash_decoder_is_at_end(uint32_t addr, const uint8_t *data, uint32_t
         case FLASH_DECODER_TYPE_INTERFACE:
             end_addr = DAPLINK_ROM_IF_START + DAPLINK_ROM_IF_SIZE;
             break;
-
+        
         case FLASH_DECODER_TYPE_TARGET:
-            end_addr = target_device.flash_end;
-            // need add check extra_flash
-            end_addr = check_extra_flash_end(end_addr);
+            //only if we are sure it is a bin for the target; without check unordered hex files will cause to terminate flashing
+            if (flash_type_target_bin && g_board_info.target_cfg) {
+                end_addr = g_board_info.target_cfg->flash_end;
+            	// need add check extra_flash
+            	end_addr = check_extra_flash_end(end_addr);		
+            }
+            else {
+                return false;
+            }
             break;
 
         default:

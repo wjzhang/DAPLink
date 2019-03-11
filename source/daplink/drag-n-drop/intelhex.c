@@ -123,19 +123,35 @@ hexfile_parse_status_t parse_hex_blob(const uint8_t *hex_blob, const uint32_t he
             case '\r': // fixed  receive last byte 0x0A in another one package when get hex end of file Tag
                 break;
             case '\n':
-                if (0 == validate_checksum(&line)) {
-                    status = HEX_PARSE_CKSUM_FAIL;
-                    goto hex_parser_exit;
-                } else {
-                    if (!record_processed) {
-                        record_processed = 1;
-                        // address byteswap...
-                        line.address = swap16(line.address);
+                //ignore new lines
+                break;
 
-                        switch (line.record_type) {
-                            case DATA_RECORD:
-                                // keeping a record of the last hex record
-                                memcpy(shadow_line.buf, line.buf, sizeof(hex_line_t));
+            // found start of a new record. reset state variables
+            case ':':
+                memset(line.buf, 0, sizeof(hex_line_t));
+                low_nibble = 0;
+                idx = 0;
+                record_processed = 0;
+                break;
+
+            // decoding lines
+            default:
+                if (low_nibble) {
+                    line.buf[idx] |= ctoh((uint8_t)(*hex_blob)) & 0xf;
+                    if (++idx >= (line.byte_count + 5)) { //all data in                        
+                        if (0 == validate_checksum(&line)) {
+                            status = HEX_PARSE_CKSUM_FAIL;
+                            goto hex_parser_exit;
+                        } else {
+                            if (!record_processed) {
+                                record_processed = 1;
+                                // address byteswap...
+                                line.address = swap16(line.address);
+
+                                switch (line.record_type) {
+                                    case DATA_RECORD:
+                                        // keeping a record of the last hex record
+                                        memcpy(shadow_line.buf, line.buf, sizeof(hex_line_t));
 
                                 // verify this is a continous block of memory or need to exit and dump
                                 if (((next_address_to_write & 0xffff0000) | line.address) != next_address_to_write) {
@@ -157,33 +173,30 @@ hexfile_parse_status_t parse_hex_blob(const uint8_t *hex_blob, const uint32_t he
                                     }
                                 }
 
-                                // move from line buffer back to input buffer
-                                memcpy(bin_buf, line.data, line.byte_count);
-                                bin_buf += line.byte_count;
-                                *bin_buf_cnt = (uint32_t)(*bin_buf_cnt) + line.byte_count;
-                                // Save next address to write
-                                next_address_to_write = ((next_address_to_write & 0xffff0000) | line.address) + line.byte_count;
-                                break;
+                                        // move from line buffer back to input buffer
+                                        memcpy(bin_buf, line.data, line.byte_count);
+                                        bin_buf += line.byte_count;
+                                        *bin_buf_cnt = (uint32_t)(*bin_buf_cnt) + line.byte_count;
+                                        // Save next address to write
+                                        next_address_to_write = ((next_address_to_write & 0xffff0000) | line.address) + line.byte_count;
+                                        break;
 
-                            case EOF_RECORD:
-                                // pad rest of the buffer with 0xff
-                                //memset(bin_buf, 0xff, (bin_buf_size - (uint32_t)(*bin_buf_cnt)));
-                                //*bin_buf_cnt = bin_buf_size;
-                                status = HEX_PARSE_EOF;
-                                goto hex_parser_exit;
+                                    case EOF_RECORD:
+                                        status = HEX_PARSE_EOF;
+                                        goto hex_parser_exit;
 
-                            case EXT_SEG_ADDR_RECORD:
-                                // Could have had data in the buffer so must exit and try to program
-                                //  before updating bin_buf_address with next_address_to_write
-                                memset(bin_buf, 0xff, (bin_buf_size - (uint32_t)(*bin_buf_cnt)));
-                                // figure the start address for the buffer before returning
-                                *bin_buf_address = next_address_to_write - (uint32_t)(*bin_buf_cnt);
-                                *hex_parse_cnt = (uint32_t)(hex_blob_size - (end - hex_blob));
-                                // update the address msb's
-                                next_address_to_write = (next_address_to_write & 0x00000000) | ((line.data[0] << 12) | (line.data[1] << 4));
-                                // Need to exit and program if buffer has been filled
-                                status = HEX_PARSE_UNALIGNED;
-                                return status;
+                                    case EXT_SEG_ADDR_RECORD:
+                                        // Could have had data in the buffer so must exit and try to program
+                                        //  before updating bin_buf_address with next_address_to_write
+                                        memset(bin_buf, 0xff, (bin_buf_size - (uint32_t)(*bin_buf_cnt)));
+                                        // figure the start address for the buffer before returning
+                                        *bin_buf_address = next_address_to_write - (uint32_t)(*bin_buf_cnt);
+                                        *hex_parse_cnt = (uint32_t)(hex_blob_size - (end - hex_blob));
+                                        // update the address msb's
+                                        next_address_to_write = (next_address_to_write & 0x00000000) | ((line.data[0] << 12) | (line.data[1] << 4));
+                                        // Need to exit and program if buffer has been filled
+                                        status = HEX_PARSE_UNALIGNED;
+                                        return status;
 
                             case EXT_LINEAR_ADDR_RECORD:
                                 // Could have had data in the buffer so must exit and try to program
