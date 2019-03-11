@@ -21,7 +21,6 @@
 
 #include "string.h"
 #include "target_board.h"
-#include "target_family.h"
 
 // Default empty board info. 
 __attribute__((weak)) 
