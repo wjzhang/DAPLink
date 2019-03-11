@@ -56,7 +56,7 @@ static uint32_t initial_addr;
 static uint32_t current_addr;
 static bool flash_initialized;
 static bool initial_addr_set;
-static bool flash_type_target_bin;
+//static bool flash_type_target_bin;
 
 static bool flash_decoder_is_at_end(uint32_t addr, const uint8_t *data, uint32_t size);
 
@@ -66,9 +66,9 @@ flash_decoder_type_t flash_decoder_detect_type(const uint8_t *data, uint32_t siz
     util_assert(size >= FLASH_DECODER_MIN_SIZE);
     // Check if this is a daplink image
     memcpy(&info, data + DAPLINK_INFO_OFFSET, sizeof(info));
-    if(!addr_valid){ //reset until we know the binary type
-        flash_type_target_bin = false;
-    }
+//    if(!addr_valid){ //reset until we know the binary type
+//        flash_type_target_bin = false;
+//    }
     if (DAPLINK_HIC_ID == info.hic_id) {
         if (DAPLINK_BUILD_KEY_IF == info.build_key) {
             // Interface update
@@ -85,9 +85,9 @@ flash_decoder_type_t flash_decoder_detect_type(const uint8_t *data, uint32_t siz
 
     // Check if a valid vector table for the target can be found
     if (validate_bin_nvic(data)) {
-        if(!addr_valid){ //binary is a bin type
-            flash_type_target_bin = true;
-        }
+//        if(!addr_valid){ //binary is a bin type
+//            flash_type_target_bin = true;
+//        }
         return FLASH_DECODER_TYPE_TARGET;
     }
 
@@ -365,7 +365,9 @@ static bool flash_decoder_is_at_end(uint32_t addr, const uint8_t *data, uint32_t
         
         case FLASH_DECODER_TYPE_TARGET:
             //only if we are sure it is a bin for the target; without check unordered hex files will cause to terminate flashing
-            if (flash_type_target_bin && g_board_info.target_cfg) {
+            // if (flash_type_target_bin && g_board_info.target_cfg) {
+            // hex also need check in range, just need check if is in extra Flash
+            if (g_board_info.target_cfg) {
                 end_addr = g_board_info.target_cfg->flash_end;
             	// need add check extra_flash
             	end_addr = check_extra_flash_end(end_addr);		
