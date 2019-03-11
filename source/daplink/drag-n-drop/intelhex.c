@@ -123,22 +123,6 @@ hexfile_parse_status_t parse_hex_blob(const uint8_t *hex_blob, const uint32_t he
             case '\r': // fixed  receive last byte 0x0A in another one package when get hex end of file Tag
                 break;
             case '\n':
-                //ignore new lines
-                break;
-
-            // found start of a new record. reset state variables
-            case ':':
-                memset(line.buf, 0, sizeof(hex_line_t));
-                low_nibble = 0;
-                idx = 0;
-                record_processed = 0;
-                break;
-
-            // decoding lines
-            default:
-                if (low_nibble) {
-                    line.buf[idx] |= ctoh((uint8_t)(*hex_blob)) & 0xf;
-                    if (++idx >= (line.byte_count + 5)) { //all data in                        
                         if (0 == validate_checksum(&line)) {
                             status = HEX_PARSE_CKSUM_FAIL;
                             goto hex_parser_exit;
