@@ -23,7 +23,7 @@
 
 #include "util.h"
 #include "settings.h"
-#include "vfs_manager.h"
+//#include "vfs_manager.h"
 #include "cortex_m.h"
 
 
@@ -145,9 +145,9 @@ void _util_assert(bool expression, const char *filename, uint16_t line)
 
     // Start a remount if this is the first assert
     // Do not call vfs_mngr_fs_remount from an ISR!
-    if (!assert_set && !cortex_in_isr()) {
-        vfs_mngr_fs_remount();
-    }
+//    if (!assert_set && !cortex_in_isr()) {
+//        vfs_mngr_fs_remount();
+//    }
 }
 
 void util_assert_clear()

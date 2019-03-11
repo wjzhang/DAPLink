@@ -307,9 +307,11 @@ static uint32_t DAP_Disconnect(uint8_t *response) {
 // Process Reset Target command and prepare response
 //   response: pointer to response data
 //   return:   number of bytes in response
+extern uint32_t reset_target(void);
 static uint32_t DAP_ResetTarget(uint8_t *response) {
 
-  *(response+1) = RESET_TARGET();
+//  *(response+1) = RESET_TARGET();
+  *(response+1) = reset_target();
   *(response+0) = DAP_OK;
   return (2U);
 }
