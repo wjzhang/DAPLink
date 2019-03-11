@@ -1055,9 +1055,13 @@ uint8_t swd_set_target_state_sw(TARGET_RESET_STATE state)
                 return 0;                
             }
             
-            //SysReset
-            if (!swd_write_word(NVIC_AIRCR, VECTKEY | SOFT_RESET)) {
-                 return 0;               
+             // Perform a soft reset
+            if (!swd_read_word(NVIC_AIRCR, &val)) {
+                return 0;
+            }
+
+            if (!swd_write_word(NVIC_AIRCR, VECTKEY | (val & SCB_AIRCR_PRIGROUP_Msk) | soft_reset)) {
+                return 0;
             }
             
             break;
@@ -1096,7 +1100,7 @@ uint8_t swd_set_target_state_sw(TARGET_RESET_STATE state)
                 return 0;
             }
 
-            if (!swd_write_word(NVIC_AIRCR, VECTKEY | (val & SCB_AIRCR_PRIGROUP_Msk) | SOFT_RESET)) {
+            if (!swd_write_word(NVIC_AIRCR, VECTKEY | (val & SCB_AIRCR_PRIGROUP_Msk) | soft_reset)) {
                 return 0;
             }
 
