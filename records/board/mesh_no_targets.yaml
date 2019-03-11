@@ -1,9 +1,9 @@
 common:
     includes:
-        - source/target/mesheven_notargets/
+        - source/family/mesheven_notargets/
     sources:
         board:
             - source/board/mesh_no_targets.c
         target:   
-            - source/target/mesheven_notargets/target.c                     
-            - source/target/mesheven_notargets/target_reset.c
+            - source/family/mesheven_notargets/target.c                     
+            - source/family/mesheven_notargets/target_reset.c

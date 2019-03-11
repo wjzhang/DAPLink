@@ -80,6 +80,10 @@ target_cfg_t target_device =
     
     .extra_flash[0].start = 0x10001000,
     .extra_flash[0].end   = 0x10001400,
+
+    // No 
+    .rt_board_id          = 0x00000000,
+    .rt_family_id         = 0x0000,
 };
 
 static uint32_t readUint32BE(const uint8_t *data)

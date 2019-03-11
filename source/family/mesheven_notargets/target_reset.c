@@ -17,25 +17,21 @@
 #include "target_config.h"
 #include "swd_host.h"
 #include "gpio.h"
+#include "target_family.h"
 
 
-void target_before_init_debug(void) {
-    return;
-}
-
-uint8_t target_unlock_sequence(void) {
-    return 1;
-}
-
-uint8_t security_bits_set(uint32_t addr, uint8_t *data, uint32_t size)
-{
-    return 0;
-}
-
-uint8_t target_set_state(TARGET_RESET_STATE state) {
+uint8_t mesheven_target_set_state(TARGET_RESET_STATE state) {
 	if ((gpio_get_config(PIN_CONFIG_DT01) == PIN_HIGH) && (target_device.flash_algo->hardware_reset_support != 0)) {
         return swd_set_target_state_hw(state);
     } else {
         return swd_set_target_state_sw(state);        
-    }           
+    }
 }
+
+
+const target_family_descriptor_t g_mesheven_family  = {
+    .family_id = kMesheven_FamilyID,
+    .default_reset_type = kHardwareReset,
+    .soft_reset_type = SYSRESETREQ,
+    .target_set_state = mesheven_target_set_state,
+};
