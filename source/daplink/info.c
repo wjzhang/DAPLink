@@ -33,10 +33,10 @@
 #include "settings.h"
 #include "target_board.h"
 
-static char hex_to_ascii(uint8_t x)
-{
-    return ('0' + (x>9 ? x+0x27 : x));
-}
+//static char hex_to_ascii(uint8_t x)
+//{
+//    return ('0' + (x>9 ? x+0x27 : x));
+//}
 
 // Constant variables
 static const daplink_info_t *const info_bl = (daplink_info_t *)(DAPLINK_ROM_BL_START + DAPLINK_INFO_OFFSET);
@@ -58,7 +58,7 @@ static uint32_t crc_config_user;
 static char string_unique_id[64 + 1];
 static char string_mac[12 + 1];
 static char string_board_id[4 + 1];
-static char string_family_id[4 + 1];
+//static char string_family_id[4 + 1];
 static char string_host_id[128 + 1];
 static char string_target_id[32 + 1];
 static char string_hic_id[8 + 1];
@@ -161,13 +161,13 @@ static void __attribute__((optimize("O0"))) setup_basics(void)
     // Board ID
     memcpy(string_board_id, get_board_id(), 4);
     string_board_id[4] = 0;
-    idx = 0;
-    //Family ID
-    string_family_id[idx++] = hex_to_ascii(((family_id >> 12) & 0xF));
-    string_family_id[idx++] = hex_to_ascii(((family_id >> 8) & 0xF));
-    string_family_id[idx++] = hex_to_ascii(((family_id >> 4) & 0xF));
-    string_family_id[idx++] = hex_to_ascii(((family_id) & 0xF));
-    string_family_id[idx++] = 0;
+//    idx = 0;
+//    //Family ID
+//    string_family_id[idx++] = hex_to_ascii(((family_id >> 12) & 0xF));
+//    string_family_id[idx++] = hex_to_ascii(((family_id >> 8) & 0xF));
+//    string_family_id[idx++] = hex_to_ascii(((family_id >> 4) & 0xF));
+//    string_family_id[idx++] = hex_to_ascii(((family_id) & 0xF));
+//    string_family_id[idx++] = 0;
     // Version
     idx = 0;
     string_version[idx++] = '0' + (DAPLINK_VERSION / 1000) % 10;
