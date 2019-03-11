@@ -18,7 +18,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifdef DRAG_N_DROP_SUPPORT
+//#ifdef DRAG_N_DROP_SUPPORT
 #include "string.h"
 
 #include "target_config.h"
@@ -119,10 +119,13 @@ static error_t target_flash_program_page(uint32_t addr, const uint8_t *buf, uint
         
         const program_target_t *const flash = g_board_info.target_cfg->flash_algo;
 
-    // check if security bits were set
-    if (1 == security_bits_set(addr, (uint8_t *)buf, size)) {
-        return ERROR_SECURITY_BITS;
-    }
+        
+        // check if security bits were set
+        if (g_target_family && g_target_family->security_bits_set){
+            if (1 == g_target_family->security_bits_set(addr, (uint8_t *)buf, size)) {
+                return ERROR_SECURITY_BITS;
+            }
+        }
 
         while (size > 0) {
             uint32_t write_size = MIN(size, flash->program_buffer_size);
@@ -258,4 +261,4 @@ static uint32_t target_flash_erase_sector_size(uint32_t addr)
 static uint8_t target_flash_busy(void){
     return (state == STATE_OPEN);
 }
-#endif
+//#endif
