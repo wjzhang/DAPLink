@@ -42,6 +42,7 @@ enum _vendor_ids {
     kRenesas_VendorID = 117,
     kWiznet_VendorID = 122,
     kRealtek_VendorID = 124,
+    kMesheven_VendorID = 254,    
 };
 
 typedef enum _family_id {
@@ -59,6 +60,7 @@ typedef enum _family_id {
     kToshiba_Tz_FamilyID = VENDOR_TO_FAMILY(kToshiba_VendorID, 1),
     kWiznet_W7500_FamilyID = VENDOR_TO_FAMILY(kWiznet_VendorID, 1),
     kRenesas_FamilyID = VENDOR_TO_FAMILY(kRenesas_VendorID, 1),
+    kMesheven_FamilyID = VENDOR_TO_FAMILY(kMesheven_VendorID, 1),    
 } family_id_t;
  
 typedef struct target_family_descriptor { 

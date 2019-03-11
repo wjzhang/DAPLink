@@ -25,6 +25,7 @@
 #include "target_family.h"
 #include "target_board.h"
 
+
 // Stub families 
 const target_family_descriptor_t g_hw_reset_family = { 
     .family_id = kStub_HWReset_FamilyID, 
@@ -44,45 +45,49 @@ const target_family_descriptor_t g_sw_sysresetreq_family = {
 };
 
 //Weakly define family
+//__attribute__((weak))
+//const target_family_descriptor_t g_nxp_kinetis_kseries = {0};
+//__attribute__((weak))
+//const target_family_descriptor_t g_nxp_kinetis_lseries = {0};
+//__attribute__((weak))
+//const target_family_descriptor_t g_nxp_mimxrt = {0};
+//__attribute__((weak))
+//const target_family_descriptor_t g_nxp_rapid_iot = {0};
+//__attribute__((weak))
+//const target_family_descriptor_t  g_nordic_nrf51  = {0};
+//__attribute__((weak))
+//const target_family_descriptor_t  g_nordic_nrf52  = {0};
+//__attribute__((weak))
+//const target_family_descriptor_t g_realtek_rtl8195am  = {0};
+//__attribute__((weak))
+//const target_family_descriptor_t g_ti_family  = {0};
+//__attribute__((weak))
+//const target_family_descriptor_t g_wiznet_family  = {0};
+//__attribute__((weak))
+//const target_family_descriptor_t g_renesas_family  = {0};
+//__attribute__((weak))
+//const target_family_descriptor_t g_toshiba_tz_family  = {0};
+
 __attribute__((weak))
-const target_family_descriptor_t g_nxp_kinetis_kseries = {0};
-__attribute__((weak))
-const target_family_descriptor_t g_nxp_kinetis_lseries = {0};
-__attribute__((weak))
-const target_family_descriptor_t g_nxp_mimxrt = {0};
-__attribute__((weak))
-const target_family_descriptor_t g_nxp_rapid_iot = {0};
-__attribute__((weak))
-const target_family_descriptor_t  g_nordic_nrf51  = {0};
-__attribute__((weak))
-const target_family_descriptor_t  g_nordic_nrf52  = {0};
-__attribute__((weak))
-const target_family_descriptor_t g_realtek_rtl8195am  = {0};
-__attribute__((weak))
-const target_family_descriptor_t g_ti_family  = {0};
-__attribute__((weak))
-const target_family_descriptor_t g_wiznet_family  = {0};
-__attribute__((weak))
-const target_family_descriptor_t g_renesas_family  = {0};
-__attribute__((weak))
-const target_family_descriptor_t g_toshiba_tz_family  = {0};
+const target_family_descriptor_t g_mesheven_family  = {0};
 
 __attribute__((weak))
 const target_family_descriptor_t *g_families[] = { 
     &g_hw_reset_family,
     &g_sw_vectreset_family,
     &g_sw_sysresetreq_family,
-    &g_nxp_kinetis_kseries,
-    &g_nxp_kinetis_lseries,
-    &g_nxp_mimxrt,
-    &g_nxp_rapid_iot,
-    &g_nordic_nrf51,
-    &g_nordic_nrf52,
-    &g_realtek_rtl8195am,
-    &g_ti_family,
-    &g_wiznet_family,
-    &g_renesas_family,
-    &g_toshiba_tz_family,
+//    &g_nxp_kinetis_kseries,
+//    &g_nxp_kinetis_lseries,
+//    &g_nxp_mimxrt,
+//    &g_nxp_rapid_iot,
+//    &g_nordic_nrf51,
+//    &g_nordic_nrf52,
+//    &g_realtek_rtl8195am,
+//    &g_ti_family,
+//    &g_wiznet_family,
+//    &g_renesas_family,
+//    &g_toshiba_tz_family,
+    &g_mesheven_family,
     0 // list terminator 
 }; 
 

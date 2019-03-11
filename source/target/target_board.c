@@ -21,15 +21,21 @@
 
 #include "string.h"
 #include "target_board.h"
+#include "swd_host.h"
+#include "target_family.h"
 
 // Default empty board info. 
 __attribute__((weak)) 
 const board_info_t g_board_info = {
 		.infoVersion = 0x1234,
-		.board_id = "0000",
+        .family_id   = kMesheven_FamilyID,
+		.board_id = "1080",
 		.daplink_url_name =       "MBED    HTM",
 		.daplink_drive_name = 		"DAPLINK    ",
 		.daplink_target_url = "https://mbed.org/device/?code=@U?version=@V?target_id=@T",
+        .flags = (kEnablePageErase) | (kEnableUnderResetConnect),
+        .target_cfg = &target_device,
+        .soft_reset_type = SYSRESETREQ,        
 };
 
 
