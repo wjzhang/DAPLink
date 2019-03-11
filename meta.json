@@ -1,0 +1,8 @@
+{
+    "project_id"     : "mesh-daplink",
+    "project_type"   : "firmware",
+    "caption_en"     : "CMSIS-DAP Firmware",
+    "caption_zh"     : "",
+    "description_en" : "Mesheven Fork of ARM MBED DAPLink",
+    "description_zh" : ""
+}
