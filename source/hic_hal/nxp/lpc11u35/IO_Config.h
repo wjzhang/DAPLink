@@ -179,18 +179,18 @@ COMPILER_ASSERT(DAPLINK_HIC_ID == DAPLINK_HIC_ID_LPC11U35);
 #define PIN_A9_IOCON                  LPC_IOCON->PIO0_5
 #define PIN_A9_IOCON_INIT             (FUNC_0)
 
-// A10 pin                             PIO0_10
-#define PIN_A10_PORT                   0
-#define PIN_A10_BIT                    10
-#define PIN_A10                        (1 << PIN_A10_BIT)
-#define PIN_A10_IOCON                  LPC_IOCON->SWCLK_PIO0_10
-#define PIN_A10_IOCON_INIT             (FUNC_1)
+//// A10 pin                             PIO0_10
+//#define PIN_A10_PORT                   0
+//#define PIN_A10_BIT                    10
+//#define PIN_A10                        (1 << PIN_A10_BIT)
+//#define PIN_A10_IOCON                  LPC_IOCON->SWCLK_PIO0_10
+//#define PIN_A10_IOCON_INIT             (FUNC_1)
 
-// A11 pin                             PIO0_15
-#define PIN_A11_PORT                   0
-#define PIN_A11_BIT                    15
-#define PIN_A11                        (1 << PIN_A11_BIT)
-#define PIN_A11_IOCON                  LPC_IOCON->SWDIO_PIO0_15
-#define PIN_A11_IOCON_INIT             (FUNC_1)
+//// A11 pin                             PIO0_15
+//#define PIN_A11_PORT                   0
+//#define PIN_A11_BIT                    15
+//#define PIN_A11                        (1 << PIN_A11_BIT)
+//#define PIN_A11_IOCON                  LPC_IOCON->SWDIO_PIO0_15
+//#define PIN_A11_IOCON_INIT             (FUNC_1)
 
 #endif

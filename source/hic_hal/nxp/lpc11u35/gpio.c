@@ -69,10 +69,10 @@ void gpio_init(void)
     LPC_GPIO->DIR[PIN_A8_PORT] &= ~PIN_A8;
     PIN_A9_IOCON |= PIN_A9_IOCON_INIT;
     LPC_GPIO->DIR[PIN_A9_PORT] &= ~PIN_A9;
-    PIN_A10_IOCON |= PIN_A10_IOCON_INIT;
-    LPC_GPIO->DIR[PIN_A10_PORT] &= ~PIN_A10;
-    PIN_A11_IOCON |= PIN_A11_IOCON_INIT;
-    LPC_GPIO->DIR[PIN_A11_PORT] &= ~PIN_A11;
+//    PIN_A10_IOCON |= PIN_A10_IOCON_INIT;
+//    LPC_GPIO->DIR[PIN_A10_PORT] &= ~PIN_A10;
+//    PIN_A11_IOCON |= PIN_A11_IOCON_INIT;
+//    LPC_GPIO->DIR[PIN_A11_PORT] &= ~PIN_A11;
     // configure GPIO-LED as output
 #if defined(CONTROLLED_POWER_LED)
     // Power led (red)
@@ -228,10 +228,10 @@ uint16_t gpio_all_pins(void)
     uint16_t a7 = ((LPC_GPIO->PIN[PIN_A7_PORT] & PIN_A7) != 0x00) ? 0x01 : 0x00;
     uint16_t a8 = ((LPC_GPIO->PIN[PIN_A8_PORT] & PIN_A8) != 0x00) ? 0x01 : 0x00;
     uint16_t a9 = ((LPC_GPIO->PIN[PIN_A9_PORT] & PIN_A9) != 0x00) ? 0x01 : 0x00;
-    uint16_t a10 = ((LPC_GPIO->PIN[PIN_A10_PORT] & PIN_A10) != 0x00) ? 0x01 : 0x00;
-    uint16_t a11 = ((LPC_GPIO->PIN[PIN_A11_PORT] & PIN_A11) != 0x00) ? 0x01 : 0x00;
+//    uint16_t a10 = ((LPC_GPIO->PIN[PIN_A10_PORT] & PIN_A10) != 0x00) ? 0x01 : 0x00;
+//    uint16_t a11 = ((LPC_GPIO->PIN[PIN_A11_PORT] & PIN_A11) != 0x00) ? 0x01 : 0x00;
 
-    rc = a0 + (a1<<1) + (a2<<2) + (a3<<3) + (a4<<4) + (a5<<5) + (a6<<6) + (a7<<7) + (a8<<8) + (a9<<9) + (a10<<10) + (a11<<11);
+    rc = a0 + (a1<<1) + (a2<<2) + (a3<<3) + (a4<<4) + (a5<<5) + (a6<<6) + (a7<<7) + (a8<<8) + (a9<<9);
 
     return rc;
 }
