@@ -32,13 +32,14 @@
 #include "info.h"
 #include "main.h"
 #include "uart.h"
-#include "file_stream.h"
 #include "settings.h"
 #include "target_reset.h"
+#include "target_family.h"
 #include <string.h>
 #include "target_config.h"
 #include "read_uid.h"
 #include "gpio.h"
+#include "error.h"
 
 void main_identification_led(uint16_t time);
 error_t target_flash_algorithm_open(const uint8_t *data, uint32_t size);
@@ -46,6 +47,11 @@ error_t target_flash_algorithm_write(const uint8_t *data, uint32_t size);
 error_t target_flash_algorithm_close(void);
 error_t target_flash_basic_configure(const uint8_t *data, uint32_t size);
 error_t target_flash_advance_configure(const uint8_t *data, uint32_t size);
+
+
+#if defined(DRAG_N_DROP_SUPPORT) || defined(MESHEVEN_FLASH_SUPPORT)
+#include "file_stream.h"
+#endif
 
 //**************************************************************************************************
 /**
@@ -143,6 +149,7 @@ uint32_t DAP_ProcessVendorCommand(const uint8_t *request, uint8_t *response) {
         num += 1;
         break;
     }
+#if defined(DRAG_N_DROP_SUPPORT) || defined(MESHEVEN_FLASH_SUPPORT)
     case ID_DAP_Vendor10: {
         // open mass storage device stream
         *response = stream_open((stream_type_t)(*request));
@@ -201,6 +208,7 @@ uint32_t DAP_ProcessVendorCommand(const uint8_t *request, uint8_t *response) {
         num += 1;
         break;
     }
+#endif
     case ID_DAP_Vendor18: break;
     case ID_DAP_Vendor19: break;
     case ID_DAP_Vendor20: break;

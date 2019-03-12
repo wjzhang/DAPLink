@@ -27,6 +27,7 @@
 #include "debug_cm.h"
 #include "DAP_config.h"
 #include "DAP.h"
+#include "target_family.h"
 #include "gpio.h"
 
 // Default NVIC and Core debug base addresses
@@ -48,23 +49,6 @@
 #define SCB_AIRCR_PRIGROUP_Pos              8                                             /*!< SCB AIRCR: PRIGROUP Position */
 #define SCB_AIRCR_PRIGROUP_Msk             (7UL << SCB_AIRCR_PRIGROUP_Pos)                /*!< SCB AIRCR: PRIGROUP Mask */
 
-#if !defined(SOFT_RESET)
-#define SOFT_RESET  SYSRESETREQ
-
-// Some targets require a soft reset for flash programming (RESET_PROGRAM).
-// DAP operations as they are controlled by the remote debugger.
-#if defined(BOARD_BAMBINO_210) || defined(BOARD_BAMBINO_210E) || defined(TARGET_NRF51822)
-// SYSRESETREQ - Software reset of the Cortex-M core and on-chip peripherals
-#define SOFT_RESET  SYSRESETREQ
-#elif defined(BOARD_LPC4337)
-// VECTRESET - Software reset of Cortex-M core
-// For some Cortex-M devices, VECTRESET is the only way to reset the core.
-// VECTRESET is not supported on Cortex-M0 and Cortex-M1 cores.
-#define SOFT_RESET  VECTRESET
-#endif
-
-#endif
-
 typedef struct {
     uint32_t select;
     uint32_t csw;
@@ -75,7 +59,15 @@ typedef struct {
     uint32_t xpsr;
 } DEBUG_STATE;
 
+static SWD_CONNECT_TYPE reset_connect = CONNECT_NORMAL;
+
 static DAP_STATE dap_state;
+static uint32_t  soft_reset = SYSRESETREQ;
+
+void swd_set_reset_connect(SWD_CONNECT_TYPE type)
+{
+    reset_connect = type;
+}
 
 void int2array(uint8_t *res, uint32_t data, uint8_t len)
 {
@@ -102,6 +94,10 @@ uint8_t swd_transfer_retry(uint32_t req, uint32_t *data)
     return ack;
 }
 
+void swd_set_soft_reset(uint32_t soft_reset_type)
+{
+    soft_reset = soft_reset_type;
+}
 
 uint8_t swd_init(void)
 {
@@ -586,7 +582,11 @@ static uint8_t swd_write_debug_state(DEBUG_STATE *state)
         return 0;
     }
 
-    if (!swd_write_word(DBG_HCSR, DBGKEY | C_DEBUGEN)) {
+    if (!swd_write_word(DBG_HCSR, DBGKEY | C_DEBUGEN | C_MASKINTS | C_HALT)) {
+        return 0;
+    }
+
+    if (!swd_write_word(DBG_HCSR, DBGKEY | C_DEBUGEN | C_MASKINTS)) {
         return 0;
     }
 
@@ -701,6 +701,11 @@ uint8_t swd_flash_syscall_exec(const program_syscall_t *sysCallParam, uint32_t e
     if (!swd_read_core_register(0, &state.r[0])) {
         return 0;
     }
+    
+    //remove the C_MASKINTS
+    if (!swd_write_word(DBG_HCSR, DBGKEY | C_DEBUGEN | C_HALT)) {
+        return 0;
+    }
 
     // Flash functions return 0 if successful.
     if (state.r[0] != 0) {
@@ -799,7 +804,9 @@ uint8_t swd_init_debug(void)
         // call a target dependant function
         // this function can do several stuff before really
         // initing the debug
-        target_before_init_debug();
+        if (g_target_family && g_target_family->target_before_init_debug) {
+            g_target_family->target_before_init_debug();
+        }
 
         if (!JTAG2SWD()) {
             do_abort = 1;
@@ -847,7 +854,9 @@ uint8_t swd_init_debug(void)
         // call a target dependant function:
         // some target can enter in a lock state
         // this function can unlock these targets
-        target_unlock_sequence();
+        if (g_target_family && g_target_family->target_unlock_sequence) {
+            g_target_family->target_unlock_sequence();
+        }
 
         if (!swd_write_dp(DP_SELECT, 0)) {
             do_abort = 1;
@@ -861,13 +870,10 @@ uint8_t swd_init_debug(void)
     return 0;
 }
 
-
-
 __attribute__((weak)) void swd_set_target_reset(uint8_t asserted)
 {
     (asserted) ? PIN_nRESET_OUT(0) : PIN_nRESET_OUT(1);
 }
-
 
 uint8_t swd_set_target_state_hw(TARGET_RESET_STATE state)
 {
@@ -900,6 +906,12 @@ uint8_t swd_set_target_state_hw(TARGET_RESET_STATE state)
             if (!swd_init_debug()) {
                 return 0;
             }
+            
+            if (reset_connect == CONNECT_UNDER_RESET) {
+                // Assert reset
+                swd_set_target_reset(1); 
+                os_dly_wait(2);
+            }
 
             // Enable debug
             while(swd_write_word(DBG_HCSR, DBGKEY | C_DEBUGEN) == 0) {
@@ -916,13 +928,17 @@ uint8_t swd_set_target_state_hw(TARGET_RESET_STATE state)
             if (!swd_write_word(DBG_EMCR, VC_CORERESET)) {
                 return 0;
             }
-
-            // Reset again
-            swd_set_target_reset(1);
-            os_dly_wait(2);
+            
+            if (reset_connect == CONNECT_NORMAL) {
+                // Assert reset
+                swd_set_target_reset(1); 
+                os_dly_wait(2);
+            }
+            
+            // Deassert reset
             swd_set_target_reset(0);
             os_dly_wait(2);
-
+            
             do {
                 if (!swd_read_word(DBG_HCSR, &val)) {
                     return 0;
@@ -1039,9 +1055,13 @@ uint8_t swd_set_target_state_sw(TARGET_RESET_STATE state)
                 return 0;                
             }
             
-            //SysReset
-            if (!swd_write_word(NVIC_AIRCR, VECTKEY | SOFT_RESET)) {
-                 return 0;               
+             // Perform a soft reset
+            if (!swd_read_word(NVIC_AIRCR, &val)) {
+                return 0;
+            }
+
+            if (!swd_write_word(NVIC_AIRCR, VECTKEY | (val & SCB_AIRCR_PRIGROUP_Msk) | soft_reset)) {
+                return 0;
             }
             
             break;
@@ -1080,7 +1100,7 @@ uint8_t swd_set_target_state_sw(TARGET_RESET_STATE state)
                 return 0;
             }
 
-            if (!swd_write_word(NVIC_AIRCR, VECTKEY | (val & SCB_AIRCR_PRIGROUP_Msk) | SOFT_RESET)) {
+            if (!swd_write_word(NVIC_AIRCR, VECTKEY | (val & SCB_AIRCR_PRIGROUP_Msk) | soft_reset)) {
                 return 0;
             }
 
@@ -1234,7 +1254,7 @@ uint8_t swd_set_target_state_hw_sw(TARGET_RESET_STATE state)
                 return 0;
             }
 
-             if (!swd_write_word(NVIC_AIRCR, VECTKEY | (val & SCB_AIRCR_PRIGROUP_Msk) | SOFT_RESET)) {
+            if (!swd_write_word(NVIC_AIRCR, VECTKEY | (val & SCB_AIRCR_PRIGROUP_Msk) | soft_reset)) {
                 return 0;
             }
 

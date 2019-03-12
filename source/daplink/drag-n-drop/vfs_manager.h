@@ -32,11 +32,8 @@
 extern "C" {
 #endif
 
-extern const vfs_filename_t daplink_mode_file_name;
-extern const vfs_filename_t daplink_drive_name;
-extern const vfs_filename_t daplink_url_name;
-//extern const char *const daplink_target_url;
 
+extern const vfs_filename_t daplink_mode_file_name;
 
 /* Callable from anywhere */
 
@@ -46,8 +43,6 @@ void vfs_mngr_fs_enable(bool enabled);
 // Remount the virtual filesystem
 void vfs_mngr_fs_remount(void);
 
-// Abort a remount if it is pending
-void vfs_mngr_fs_remount_abort(void);    
 
 /* Callable only from the thread running the virtual fs */
 
