@@ -1,4 +1,6 @@
 common:
+    macros:
+        - MESHEVEN_FLASH_SUPPORT
     includes:
         - source/family/mesheven_notargets/
     sources:

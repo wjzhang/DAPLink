@@ -49,9 +49,9 @@ error_t target_flash_basic_configure(const uint8_t *data, uint32_t size);
 error_t target_flash_advance_configure(const uint8_t *data, uint32_t size);
 
 
-//#ifdef DRAG_N_DROP_SUPPORT
+#if defined(DRAG_N_DROP_SUPPORT) || defined(MESHEVEN_FLASH_SUPPORT)
 #include "file_stream.h"
-//#endif
+#endif
 
 //**************************************************************************************************
 /**
@@ -149,7 +149,7 @@ uint32_t DAP_ProcessVendorCommand(const uint8_t *request, uint8_t *response) {
         num += 1;
         break;
     }
-//#ifdef DRAG_N_DROP_SUPPORT
+#if defined(DRAG_N_DROP_SUPPORT) || defined(MESHEVEN_FLASH_SUPPORT)
     case ID_DAP_Vendor10: {
         // open mass storage device stream
         *response = stream_open((stream_type_t)(*request));
@@ -208,7 +208,7 @@ uint32_t DAP_ProcessVendorCommand(const uint8_t *request, uint8_t *response) {
         num += 1;
         break;
     }
-//#endif
+#endif
     case ID_DAP_Vendor18: break;
     case ID_DAP_Vendor19: break;
     case ID_DAP_Vendor20: break;

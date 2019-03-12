@@ -18,7 +18,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-//#ifdef DRAG_N_DROP_SUPPORT
+#if defined(DRAG_N_DROP_SUPPORT) || defined(MESHEVEN_FLASH_SUPPORT)
 #include "string.h"
 
 #include "target_config.h"
@@ -261,4 +261,4 @@ static uint32_t target_flash_erase_sector_size(uint32_t addr)
 static uint8_t target_flash_busy(void){
     return (state == STATE_OPEN);
 }
-//#endif
+#endif

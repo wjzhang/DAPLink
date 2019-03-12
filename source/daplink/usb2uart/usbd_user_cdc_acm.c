@@ -24,7 +24,7 @@
 #include "main.h"
 #include "target_reset.h"
 #include "uart.h"
-#ifdef DRAG_N_DROP_SUPPORT
+#if defined(DRAG_N_DROP_SUPPORT) || defined(MESHEVEN_FLASH_SUPPORT)
 #include "flash_intf.h"
 #endif
 #include "target_family.h"
@@ -115,7 +115,7 @@ static U32 start_break_time = 0;
 int32_t USBD_CDC_ACM_SendBreak(uint16_t dur)
 {
     uint32_t end_break_time;
-#ifdef DRAG_N_DROP_SUPPORT    
+#if defined(DRAG_N_DROP_SUPPORT) || defined(MESHEVEN_FLASH_SUPPORT) 
     if (!flash_intf_target->flash_busy()) 
 #endif    
     { //added checking if flashing on target is in progress

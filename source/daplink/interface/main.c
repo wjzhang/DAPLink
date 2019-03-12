@@ -45,6 +45,8 @@
 
 #ifdef DRAG_N_DROP_SUPPORT
 #include "vfs_manager.h"
+#endif
+#if defined(DRAG_N_DROP_SUPPORT) || defined(MESHEVEN_FLASH_SUPPORT)
 #include "flash_intf.h"
 #include "flash_manager.h"
 #endif
@@ -281,7 +283,7 @@ __task void main_task(void)
         swd_set_reset_connect(CONNECT_UNDER_RESET);
     }
     if(g_board_info.flags & kEnablePageErase){
-#ifdef DRAG_N_DROP_SUPPORT        
+#if defined(DRAG_N_DROP_SUPPORT) || defined(MESHEVEN_FLASH_SUPPORT)        
         flash_manager_set_page_erase(true);
 #endif        
     }
@@ -403,7 +405,7 @@ __task void main_task(void)
 
             // handle reset button without eventing
             if (!reset_pressed && gpio_get_reset_btn_fwrd()) { 
-#ifdef DRAG_N_DROP_SUPPORT
+#if defined(DRAG_N_DROP_SUPPORT) || defined(MESHEVEN_FLASH_SUPPORT)
                if (!flash_intf_target->flash_busy()) //added checking if flashing on target is in progress
 #endif                
                 {
