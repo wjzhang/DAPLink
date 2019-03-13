@@ -148,7 +148,7 @@
             <RestoreSysVw>1</RestoreSysVw>
           </Target>
           <RunDebugAfterBuild>0</RunDebugAfterBuild>
-          <TargetSelection>12</TargetSelection>
+          <TargetSelection>5</TargetSelection>
           <SimDlls>
             <CpuDll></CpuDll>
             <CpuDllArguments></CpuDllArguments>
@@ -162,7 +162,7 @@
             <PeripheralDll></PeripheralDll>
             <PeripheralDllArguments></PeripheralDllArguments>
             <InitializationFile></InitializationFile>
-            <Driver>BIN\CMSIS_AGDI.dll</Driver>
+            <Driver>STLink\ST-LINKIII-KEIL_SWO.dll</Driver>
           </TargetDlls>
         </DebugOption>
         <Utilities>
@@ -171,11 +171,11 @@
             <UseExternalTool>0</UseExternalTool>
             <RunIndependent>0</RunIndependent>
             <UpdateFlashBeforeDebugging>1</UpdateFlashBeforeDebugging>
-            <Capability>1</Capability>
-            <DriverSelection>4096</DriverSelection>
+            <Capability>0</Capability>
+            <DriverSelection>-1</DriverSelection>
           </Flash1>
           <bUseTDR>1</bUseTDR>
-          <Flash2>BIN\UL2CM3.DLL</Flash2>
+          <Flash2></Flash2>
           <Flash3>"" ()</Flash3>
           <Flash4></Flash4>
           <pFcarmOut></pFcarmOut>
@@ -367,11 +367,14 @@
             <v6LangP>1</v6LangP>
             <vShortEn>1</vShortEn>
             <vShortWch>1</vShortWch>
+            <v6Lto>0</v6Lto>
+            <v6WtE>0</v6WtE>
+            <v6Rtti>0</v6Rtti>
             <VariousControls>
               <MiscControls>--gnu --c99</MiscControls>
-              <Define>DAPLINK_VERSION=251, HID_ENDPOINT, CDC_ENDPOINT, WEBUSB_INTERFACE, WINUSB_INTERFACE, DAPLINK_IF, DAPLINK_BUILD_KEY=0x9B939E8F, INTERFACE_LPC11U35, DAPLINK_HIC_ID=0x97969902</Define>
+              <Define>DAPLINK_VERSION=253, HID_ENDPOINT, CDC_ENDPOINT, WEBUSB_INTERFACE, WINUSB_INTERFACE, DAPLINK_IF, DAPLINK_BUILD_KEY=0x9B939E8F, INTERFACE_LPC11U35, DAPLINK_HIC_ID=0x97969902, MESHEVEN_FLASH_SUPPORT</Define>
               <Undefine></Undefine>
-              <IncludePath>..\..\..\source\usb; ..\..\..\source\daplink\cmsis-dap; ..\..\..\source\daplink\drag-n-drop; ..\..\..\source\daplink\usb2uart; ..\..\..\source\daplink\settings; ..\..\..\source\daplink; ..\..\..\source\daplink\interface; ..\..\..\source\cmsis-core; ..\..\..\source\hic_hal; ..\..\..\source\rtos; ..\..\..\source\hic_hal\nxp\lpc11u35; ..\..\..\source\target\mesheven_notargets</IncludePath>
+              <IncludePath>..\..\..\source\usb; ..\..\..\source\daplink\cmsis-dap; ..\..\..\source\daplink\drag-n-drop; ..\..\..\source\daplink\usb2uart; ..\..\..\source\daplink\settings; ..\..\..\source\daplink; ..\..\..\source\daplink\interface; ..\..\..\source\cmsis-core; ..\..\..\source\hic_hal; ..\..\..\source\target; ..\..\..\source\rtos; ..\..\..\source\hic_hal\nxp\lpc11u35; ..\..\..\source\family\mesheven_notargets</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -384,8 +387,9 @@
             <NoWarn>0</NoWarn>
             <uSurpInc>0</uSurpInc>
             <useXO>0</useXO>
+            <uClangAs>0</uClangAs>
             <VariousControls>
-              <MiscControls>--cpreproc --cpreproc_opts=-DDAPLINK_VERSION=251,-DHID_ENDPOINT,-DCDC_ENDPOINT,-DWEBUSB_INTERFACE,-DWINUSB_INTERFACE,-DDAPLINK_IF,-DDAPLINK_BUILD_KEY=0x9B939E8F,-DINTERFACE_LPC11U35,-DDAPLINK_HIC_ID=0x97969902</MiscControls>
+              <MiscControls>--cpreproc --cpreproc_opts=-DDAPLINK_VERSION=253,-DHID_ENDPOINT,-DCDC_ENDPOINT,-DWEBUSB_INTERFACE,-DWINUSB_INTERFACE,-DDAPLINK_IF,-DDAPLINK_BUILD_KEY=0x9B939E8F,-DINTERFACE_LPC11U35,-DDAPLINK_HIC_ID=0x97969902,-DMESHEVEN_FLASH_SUPPORT</MiscControls>
               <Define></Define>
               <Undefine></Undefine>
               <IncludePath></IncludePath>
@@ -860,9 +864,19 @@
               <FilePath>..\..\..\source\hic_hal\nxp\lpc11u35\system_LPC11Uxx.h</FilePath>
             </File>
             <File>
+              <FileName>target_board.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\..\source\target\target_board.h</FilePath>
+            </File>
+            <File>
               <FileName>target_config.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\..\..\source\hic_hal\target_config.h</FilePath>
+            </File>
+            <File>
+              <FileName>target_family.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\..\source\target\target_family.h</FilePath>
             </File>
             <File>
               <FileName>target_reset.h</FileName>
@@ -1212,12 +1226,22 @@
             <File>
               <FileName>target.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\source\target\mesheven_notargets\target.c</FilePath>
+              <FilePath>..\..\..\source\family\mesheven_notargets\target.c</FilePath>
+            </File>
+            <File>
+              <FileName>target_board.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\source\target\target_board.c</FilePath>
+            </File>
+            <File>
+              <FileName>target_family.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\source\target\target_family.c</FilePath>
             </File>
             <File>
               <FileName>target_reset.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\source\target\mesheven_notargets\target_reset.c</FilePath>
+              <FilePath>..\..\..\source\family\mesheven_notargets\target_reset.c</FilePath>
             </File>
           </Files>
         </Group>
