@@ -7,7 +7,7 @@
 
   <Targets>
     <Target>
-      <TargetName>lpc11u35_no_targets_if</TargetName>
+      <TargetName>MB0017-LPC11U35</TargetName>
       <ToolsetNumber>0x4</ToolsetNumber>
       <ToolsetName>ARM-ADS</ToolsetName>
       <pCCUsed>5060061::V5.06 update 1 (build 61)::ARMCC</pCCUsed>
