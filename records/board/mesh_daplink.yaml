@@ -1,0 +1,11 @@
+common:
+    macros:
+        - MESHEVEN_FLASH_SUPPORT
+    includes:
+        - source/family/mesh_daplink_target/
+    sources:
+        board:
+            - source/board/mesh_daplink.c
+        target:   
+            - source/family/mesh_daplink_target/target.c                     
+            - source/family/mesh_daplink_target/target_reset.c
