@@ -1,8 +1,21 @@
 {
     "project_id"     : "mesh-daplink",
-    "project_type"   : "firmware",
-    "caption_en"     : "CMSIS-DAP Firmware",
+    "project_type"   : "module",
+    "caption_en"     : "Mesheven CMSIS-DAP",
     "caption_zh"     : "",
-    "description_en" : "Mesheven Fork of ARM MBED DAPLink",
-    "description_zh" : ""
+    "description_en" : "Mesheven DAPLink Implementation",
+    "description_zh" : "",
+    "items":
+    [
+        {
+            "id"      : "APPM-MB0017-LPC11U35",
+            "type"    : "app_module",
+            "builder" : "mesh-builder-keil",
+            "keil":
+            {
+                "project" : "mesheven/projects/mesh-daplink/mesh-daplink.uvproj",
+                "target"  : "MB0017-LPC11U35"
+            }
+        }
+    ]
 }
