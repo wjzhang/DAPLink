@@ -299,7 +299,15 @@ int32_t uart_write_data(uint8_t *data, uint16_t size)
 
 int32_t uart_read_data(uint8_t *data, uint16_t size)
 {
-    return circ_buf_read(&read_buffer, data, size);
+    int32_t rc =  0;
+    if (size == 0) {
+        return 0;
+    }
+    
+    rc = circ_buf_read(&read_buffer, data, size);
+    //enable RX interrupt
+    LPC_USART->IER |= (1 << 0);    
+    return rc;    
 }
 
 void uart_enable_flow_control(bool enabled)
@@ -334,21 +342,29 @@ void UART_IRQHandler(void)
             uint32_t free;
             uint8_t data;
             
-            data = LPC_USART->RBR;
+//            data = LPC_USART->RBR;  
             free = circ_buf_count_free(&read_buffer);
-            if (free > RX_OVRF_MSG_SIZE) {
+//            if (free > RX_OVRF_MSG_SIZE) {
+            if (free > 0) {
+                data = LPC_USART->RBR;
                 circ_buf_push(&read_buffer, data);
-            } else if (config_get_overflow_detect()) {
-                if (RX_OVRF_MSG_SIZE == free) {
-                    circ_buf_write(&read_buffer, (uint8_t*)RX_OVRF_MSG, RX_OVRF_MSG_SIZE);
-                } else {
-                    // Drop newest
-                }
             } else {
-                // Drop oldest
-                circ_buf_pop(&read_buffer);
-                circ_buf_push(&read_buffer, data);
+                //buffer full. keep data in FIFO, assert RTS=HIGH.
+                //disable the RX interrupt
+                LPC_USART->IER &= ~(0x01 << 0);
+                break;                
             }
+//            } else if (config_get_overflow_detect()) {
+//                if (RX_OVRF_MSG_SIZE == free) {
+//                    circ_buf_write(&read_buffer, (uint8_t*)RX_OVRF_MSG, RX_OVRF_MSG_SIZE);
+//                } else {
+//                    // Drop newest
+//                }
+//            } else {
+//                // Drop oldest
+//                circ_buf_pop(&read_buffer);
+//                circ_buf_push(&read_buffer, data);
+//            }
         }
     }
 
@@ -359,7 +375,7 @@ static int32_t reset(void)
 {
     uint32_t mcr;
     // Reset FIFOs
-    LPC_USART->FCR = 0x06;
+    LPC_USART->FCR = 0x87; //0x06;
     baudrate  = 0;
     dll       = 0;
     tx_in_progress = 0;
@@ -373,7 +389,7 @@ static int32_t reset(void)
 
     // Ensure a clean start, no data in either TX or RX FIFO
     while ((LPC_USART->LSR & ((1 << 5) | (1 << 6))) != ((1 << 5) | (1 << 6))) {
-        LPC_USART->FCR = (1 << 1) | (1 << 2);
+        LPC_USART->FCR = 0x87; // (1 << 1) | (1 << 2);
     }
 
     // Restore previous mode (loopback off)
