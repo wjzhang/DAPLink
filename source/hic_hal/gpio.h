@@ -29,20 +29,6 @@
 extern "C" {
 #endif
 
-enum
-{
-	PIN_CONFIG_DT01 = 0,
-	PIN_CONFIG_1    = 1,
-	PIN_CONFIG_2    = 2,
-	PIN_CONFIG_3    = 3,
-};
-
-enum
-{
-	PIN_LOW  = 0,
-	PIN_HIGH = 1,
-};    
-
 // wiring on PCB is unknown so implementations may vary
 typedef enum led_state {
     GPIO_LED_OFF = 0,
@@ -58,7 +44,6 @@ uint8_t gpio_get_reset_btn_no_fwrd(void);
 uint8_t gpio_get_reset_btn_fwrd(void);
 
 uint8_t gpio_get_sw_reset(void);
-uint8_t gpio_get_config(uint8_t cfgid);
 uint16_t gpio_all_pins(void);
 
 static inline uint8_t gpio_get_reset_btn(void)

@@ -41,7 +41,7 @@ uint8_t write_buffer_data[BUFFER_SIZE];
 circ_buf_t read_buffer;
 uint8_t read_buffer_data[BUFFER_SIZE];
 
-//static uint8_t flow_control_enabled = 0;
+static uint8_t flow_control_enabled = 0;
 
 static int32_t reset(void);
 
@@ -57,20 +57,16 @@ int32_t uart_initialize(void)
     // alternate function USART and PullNone
     LPC_IOCON->PIO0_18 |= 0x01;
     LPC_IOCON->PIO0_19 |= 0x01;
-	// alternate function USART RTS/CTS and PullUp
-	if(gpio_get_config(PIN_CONFIG_DT01) == PIN_HIGH) {	
-        LPC_IOCON->PIO0_7  = 0x11; // CTS
-        LPC_IOCON->PIO0_17 = 0x11; // RTS
-    }
+    // default: RTS/CTS to input & pulldown
+    // DT01 need keep pulldown in RTS/CTS flow control
+    LPC_IOCON->PIO0_7  = 0x08; // CTS as GPIO, pulldown
+    LPC_IOCON->PIO0_17 = 0x08; // RTS as GPIO, pulldown
+    LPC_GPIO->DIR[0] &= ~((0x01 << 7) | (0x01 << 17));    
+
     // enable FIFOs (trigger level 1) and clear them
     LPC_USART->FCR = 0x87;
     // Transmit Enable
     LPC_USART->TER     = 0x80;
-    // Set RTS/CTS
-	if(gpio_get_config(PIN_CONFIG_DT01) == PIN_HIGH)
-	{        
-        LPC_USART->MCR = (1 << 7) | (1 << 6); // Enable RTS and CTS flow control 
-	}    
     // reset uart
     reset();
     // enable rx and rx error interrupt
@@ -110,7 +106,7 @@ int32_t uart_set_configuration(UART_Configuration *config)
     // reset uart
     reset();
     //clear RTS
-	if(gpio_get_config(PIN_CONFIG_DT01) == PIN_HIGH)
+    if (flow_control_enabled)
 	{
         LPC_USART->MCR = (1 << 1);  
 	} 
@@ -166,27 +162,22 @@ int32_t uart_set_configuration(UART_Configuration *config)
             break;
     }
 
-//    if (flow_control_enabled) {
-//        LPC_IOCON->PIO0_17 |= 0x01;     // RTS
-//        LPC_IOCON->PIO0_7  |= 0x01;     // CTS
-//        // enable auto RTS and CTS
-//        LPC_USART->MCR = (1 << 6) | (1 << 7);
-//    } else {
-//        LPC_IOCON->PIO0_17 &= ~0x01;     // RTS
-//        LPC_IOCON->PIO0_7  &= ~0x01;     // CTS
-//        // disable auto RTS and CTS
-//        LPC_USART->MCR = (0 << 6) | (0 << 7);
-//    }
+    if (flow_control_enabled) {
+        LPC_IOCON->PIO0_17 |= 0x01;     // RTS
+        LPC_IOCON->PIO0_7  |= 0x01;     // CTS
+        // enable auto RTS and CTS
+        LPC_USART->MCR = (1 << 6) | (1 << 7);
+    } else {
+        LPC_IOCON->PIO0_17 &= ~0x01;     // RTS
+        LPC_IOCON->PIO0_7  &= ~0x01;     // CTS
+        // disable auto RTS and CTS
+        LPC_USART->MCR = (0 << 6) | (0 << 7);
+    }
 
     LPC_USART->LCR = (data_bits << 0)
                      | (stop_bits << 2)
                      | (parity << 3);
 
-    // Set RTS/CTS    
-	if(gpio_get_config(PIN_CONFIG_DT01) == PIN_HIGH)
-	{
-        LPC_USART->MCR = (1 << 7) | (1 << 6); // Enable RTS and CTS flow control
-	}  
     // Enable UART interrupt
     NVIC_EnableIRQ(UART_IRQn);
     return 1;
@@ -274,16 +265,11 @@ int32_t uart_get_configuration(UART_Configuration *config)
     }
 
     // get flow control
-//    if (flow_control_enabled) {
-//    	config->FlowControl = UART_FLOW_CONTROL_RTS_CTS;
-//    }
-//    else {
-//    	config->FlowControl = UART_FLOW_CONTROL_NONE;
-//    }
-    if(gpio_get_config(PIN_CONFIG_DT01) == PIN_HIGH) {
-        config->FlowControl = UART_FLOW_CONTROL_RTS_CTS;
-    } else {
-        config->FlowControl = UART_FLOW_CONTROL_NONE;
+    if (flow_control_enabled) {
+    	config->FlowControl = UART_FLOW_CONTROL_RTS_CTS;
+    }
+    else {
+    	config->FlowControl = UART_FLOW_CONTROL_NONE;
     }
     return 1;
 }
@@ -318,7 +304,7 @@ int32_t uart_read_data(uint8_t *data, uint16_t size)
 
 void uart_enable_flow_control(bool enabled)
 {
-//    flow_control_enabled = (uint8_t)enabled;
+    flow_control_enabled = (uint8_t)enabled;
 }
 
 void UART_IRQHandler(void)
