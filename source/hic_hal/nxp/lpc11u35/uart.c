@@ -41,7 +41,7 @@ uint8_t write_buffer_data[BUFFER_SIZE];
 circ_buf_t read_buffer;
 uint8_t read_buffer_data[BUFFER_SIZE];
 
-static uint8_t flow_control_enabled = 0;
+static uint8_t flow_control_enabled = 1;
 
 static int32_t reset(void);
 
@@ -61,7 +61,7 @@ int32_t uart_initialize(void)
     // DT01 need keep pulldown in RTS/CTS flow control
     LPC_IOCON->PIO0_7  = 0x08; // CTS as GPIO, pulldown
     LPC_IOCON->PIO0_17 = 0x08; // RTS as GPIO, pulldown
-    LPC_GPIO->DIR[0] &= ~((0x01 << 7) | (0x01 << 17));    
+    LPC_GPIO->DIR[0] &= ~((1UL << 7) | (1UL << 17));   
 
     // enable FIFOs (trigger level 1) and clear them
     LPC_USART->FCR = 0x87;
@@ -70,7 +70,7 @@ int32_t uart_initialize(void)
     // reset uart
     reset();
     // enable rx and rx error interrupt
-    LPC_USART->IER = (1 << 0) | (1 << 2);
+    LPC_USART->IER = (1 << 0);
     NVIC_EnableIRQ(UART_IRQn);
     return 1;
 }
@@ -279,9 +279,9 @@ int32_t uart_write_free(void)
     return circ_buf_count_free(&write_buffer);
 }
 
-int32_t uart_write_data(uint8_t *data, uint16_t size)
+int32_t uart_write_data(uint8_t *data, int32_t size)
 {
-    uint32_t cnt;
+    int32_t cnt;
 
     cnt = circ_buf_write(&write_buffer, data, size);
 
@@ -297,10 +297,10 @@ int32_t uart_write_data(uint8_t *data, uint16_t size)
 }
 
 
-int32_t uart_read_data(uint8_t *data, uint16_t size)
+int32_t uart_read_data(uint8_t *data, int32_t size)
 {
     int32_t rc =  0;
-    if (size == 0) {
+    if (size <= 0) {
         return 0;
     }
     
@@ -339,7 +339,7 @@ void UART_IRQHandler(void)
     if (((iir & 0x0E) == 0x04)  ||        // Rx interrupt (RDA)
             ((iir & 0x0E) == 0x0C))  {        // Rx interrupt (CTI)
         while (LPC_USART->LSR & 0x01) {
-            uint32_t free;
+            int32_t free;
             uint8_t data;
             
 //            data = LPC_USART->RBR;  
@@ -351,7 +351,7 @@ void UART_IRQHandler(void)
             } else {
                 //buffer full. keep data in FIFO, assert RTS=HIGH.
                 //disable the RX interrupt
-                LPC_USART->IER &= ~(0x01 << 0);
+                LPC_USART->IER &= ~(1 << 0);
                 break;                
             }
 //            } else if (config_get_overflow_detect()) {
