@@ -30,8 +30,10 @@ extern "C" {
 #endif
 
 typedef struct {
-    uint32_t head;
-    uint32_t tail;
+    volatile int32_t  cnt_in;
+    volatile int32_t  cnt_out;    
+    volatile uint32_t head;
+    volatile uint32_t tail;
     uint32_t size;
     uint8_t *buf;
 } circ_buf_t;
@@ -46,16 +48,16 @@ void circ_buf_push(circ_buf_t *circ_buf, uint8_t data);
 uint8_t circ_buf_pop(circ_buf_t *circ_buf);
 
 // Get the number of bytes in the circular buffer
-uint32_t circ_buf_count_used(circ_buf_t *circ_buf);
+int32_t circ_buf_count_used(circ_buf_t *circ_buf);
 
 // Get the number of free spots left in the circular buffer
-uint32_t circ_buf_count_free(circ_buf_t *circ_buf);
+int32_t circ_buf_count_free(circ_buf_t *circ_buf);
 
 // Attempt to read size bytes from the buffer. Return the number of bytes read
-uint32_t circ_buf_read(circ_buf_t *circ_buf, uint8_t *data, uint32_t size);
+int32_t circ_buf_read(circ_buf_t *circ_buf, uint8_t *data, int32_t size);
 
 // Attempt to write size bytes to the buffer. Return the number of bytes written
-uint32_t circ_buf_write(circ_buf_t *circ_buf, const uint8_t *data, uint32_t size);
+int32_t circ_buf_write(circ_buf_t *circ_buf, const uint8_t *data, int32_t size);
 
 #ifdef __cplusplus
 }
