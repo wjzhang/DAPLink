@@ -579,7 +579,7 @@ projects:
         - *module_if
         - *module_hic_lpc11u35
         - records/board/mesh_multi_targets.yaml
-    lpc11u35_no_targets_if:
+    mesh-daplink:
         - *module_if
         - *module_hic_lpc11u35
-        - records/board/mesh_no_targets.yaml
+        - records/board/mesh_daplink.yaml

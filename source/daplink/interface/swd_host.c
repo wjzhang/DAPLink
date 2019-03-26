@@ -1191,14 +1191,10 @@ uint8_t swd_set_target_state_sw(TARGET_RESET_STATE state)
 
 uint32_t reset_target(void)
 {
-    if (gpio_get_config(PIN_CONFIG_DT01) == PIN_HIGH) {
-        PIN_nRESET_OUT(0);
-        os_dly_wait(2);
-        PIN_nRESET_OUT(1);    
-        return 1;
-    } else {
-        return 0;
-    }
+    PIN_nRESET_OUT(0);
+    os_dly_wait(2);
+    PIN_nRESET_OUT(1);    
+    return 1;
 }
 
 uint8_t swd_set_target_state_hw_sw(TARGET_RESET_STATE state)

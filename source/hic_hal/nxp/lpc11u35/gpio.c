@@ -169,51 +169,6 @@ void gpio_set_cdc_led(gpio_led_state_t state)
 //    }
 
 
-static uint32_t gpio_get_config0(void)
-{
-	return ((LPC_GPIO->PIN[PIN_A0_PORT] & PIN_A0) != 0x00)? PIN_HIGH:PIN_LOW;
-}
-
-static uint32_t gpio_get_config1(void)
-{
-	return ((LPC_GPIO->PIN[PIN_A1_PORT] & PIN_A1) != 0x00)? PIN_HIGH:PIN_LOW;
-}
-
-static uint32_t gpio_get_config2(void)
-{
-	return ((LPC_GPIO->PIN[PIN_A2_PORT] & PIN_A2) != 0x00)? PIN_HIGH:PIN_LOW;
-}
-
-static uint32_t gpio_get_config3(void)
-{
-	return ((LPC_GPIO->PIN[PIN_A3_PORT] & PIN_A3) != 0x00)? PIN_HIGH:PIN_LOW;
-}
-
-uint8_t gpio_get_config(uint8_t cfgid)
-{
-    uint8_t rc = 0;
-	switch (cfgid)
-	{
-        case PIN_CONFIG_DT01:
-            rc = gpio_get_config0();
-            break;
-
-		case PIN_CONFIG_1:
-			rc = gpio_get_config1();
-			break;
-
-		case PIN_CONFIG_2:
-			rc = gpio_get_config2();
-            break;
-
-		case PIN_CONFIG_3:
-			rc = gpio_get_config3();
-			break;
-    }
-
-	return rc;
-}
-
 uint16_t gpio_all_pins(void)
 {
     uint16_t rc = 0;

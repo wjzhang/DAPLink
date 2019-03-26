@@ -41,7 +41,7 @@ uint8_t write_buffer_data[BUFFER_SIZE];
 circ_buf_t read_buffer;
 uint8_t read_buffer_data[BUFFER_SIZE];
 
-//static uint8_t flow_control_enabled = 0;
+static uint8_t flow_control_enabled = 1;
 
 static int32_t reset(void);
 
@@ -57,24 +57,20 @@ int32_t uart_initialize(void)
     // alternate function USART and PullNone
     LPC_IOCON->PIO0_18 |= 0x01;
     LPC_IOCON->PIO0_19 |= 0x01;
-	// alternate function USART RTS/CTS and PullUp
-	if(gpio_get_config(PIN_CONFIG_DT01) == PIN_HIGH) {	
-        LPC_IOCON->PIO0_7  = 0x11; // CTS
-        LPC_IOCON->PIO0_17 = 0x11; // RTS
-    }
+    // default: RTS/CTS to input & pulldown
+    // DT01 need keep pulldown in RTS/CTS flow control
+    LPC_IOCON->PIO0_7  = 0x08; // CTS as GPIO, pulldown
+    LPC_IOCON->PIO0_17 = 0x08; // RTS as GPIO, pulldown
+    LPC_GPIO->DIR[0] &= ~((1UL << 7) | (1UL << 17));   
+
     // enable FIFOs (trigger level 1) and clear them
     LPC_USART->FCR = 0x87;
     // Transmit Enable
     LPC_USART->TER     = 0x80;
-    // Set RTS/CTS
-	if(gpio_get_config(PIN_CONFIG_DT01) == PIN_HIGH)
-	{        
-        LPC_USART->MCR = (1 << 7) | (1 << 6); // Enable RTS and CTS flow control 
-	}    
     // reset uart
     reset();
     // enable rx and rx error interrupt
-    LPC_USART->IER = (1 << 0) | (1 << 2);
+    LPC_USART->IER = (1 << 0);
     NVIC_EnableIRQ(UART_IRQn);
     return 1;
 }
@@ -110,7 +106,7 @@ int32_t uart_set_configuration(UART_Configuration *config)
     // reset uart
     reset();
     //clear RTS
-	if(gpio_get_config(PIN_CONFIG_DT01) == PIN_HIGH)
+    if (flow_control_enabled)
 	{
         LPC_USART->MCR = (1 << 1);  
 	} 
@@ -166,27 +162,22 @@ int32_t uart_set_configuration(UART_Configuration *config)
             break;
     }
 
-//    if (flow_control_enabled) {
-//        LPC_IOCON->PIO0_17 |= 0x01;     // RTS
-//        LPC_IOCON->PIO0_7  |= 0x01;     // CTS
-//        // enable auto RTS and CTS
-//        LPC_USART->MCR = (1 << 6) | (1 << 7);
-//    } else {
-//        LPC_IOCON->PIO0_17 &= ~0x01;     // RTS
-//        LPC_IOCON->PIO0_7  &= ~0x01;     // CTS
-//        // disable auto RTS and CTS
-//        LPC_USART->MCR = (0 << 6) | (0 << 7);
-//    }
+    if (flow_control_enabled) {
+        LPC_IOCON->PIO0_17 |= 0x01;     // RTS
+        LPC_IOCON->PIO0_7  |= 0x01;     // CTS
+        // enable auto RTS and CTS
+        LPC_USART->MCR = (1 << 6) | (1 << 7);
+    } else {
+        LPC_IOCON->PIO0_17 &= ~0x01;     // RTS
+        LPC_IOCON->PIO0_7  &= ~0x01;     // CTS
+        // disable auto RTS and CTS
+        LPC_USART->MCR = (0 << 6) | (0 << 7);
+    }
 
     LPC_USART->LCR = (data_bits << 0)
                      | (stop_bits << 2)
                      | (parity << 3);
 
-    // Set RTS/CTS    
-	if(gpio_get_config(PIN_CONFIG_DT01) == PIN_HIGH)
-	{
-        LPC_USART->MCR = (1 << 7) | (1 << 6); // Enable RTS and CTS flow control
-	}  
     // Enable UART interrupt
     NVIC_EnableIRQ(UART_IRQn);
     return 1;
@@ -274,16 +265,11 @@ int32_t uart_get_configuration(UART_Configuration *config)
     }
 
     // get flow control
-//    if (flow_control_enabled) {
-//    	config->FlowControl = UART_FLOW_CONTROL_RTS_CTS;
-//    }
-//    else {
-//    	config->FlowControl = UART_FLOW_CONTROL_NONE;
-//    }
-    if(gpio_get_config(PIN_CONFIG_DT01) == PIN_HIGH) {
-        config->FlowControl = UART_FLOW_CONTROL_RTS_CTS;
-    } else {
-        config->FlowControl = UART_FLOW_CONTROL_NONE;
+    if (flow_control_enabled) {
+    	config->FlowControl = UART_FLOW_CONTROL_RTS_CTS;
+    }
+    else {
+    	config->FlowControl = UART_FLOW_CONTROL_NONE;
     }
     return 1;
 }
@@ -293,9 +279,9 @@ int32_t uart_write_free(void)
     return circ_buf_count_free(&write_buffer);
 }
 
-int32_t uart_write_data(uint8_t *data, uint16_t size)
+int32_t uart_write_data(uint8_t *data, int32_t size)
 {
-    uint32_t cnt;
+    int32_t cnt;
 
     cnt = circ_buf_write(&write_buffer, data, size);
 
@@ -311,14 +297,22 @@ int32_t uart_write_data(uint8_t *data, uint16_t size)
 }
 
 
-int32_t uart_read_data(uint8_t *data, uint16_t size)
+int32_t uart_read_data(uint8_t *data, int32_t size)
 {
-    return circ_buf_read(&read_buffer, data, size);
+    int32_t rc =  0;
+    if (size <= 0) {
+        return 0;
+    }
+    
+    rc = circ_buf_read(&read_buffer, data, size);
+    //enable RX interrupt
+    LPC_USART->IER |= (1 << 0);    
+    return rc;    
 }
 
 void uart_enable_flow_control(bool enabled)
 {
-//    flow_control_enabled = (uint8_t)enabled;
+    flow_control_enabled = (uint8_t)enabled;
 }
 
 void UART_IRQHandler(void)
@@ -345,24 +339,32 @@ void UART_IRQHandler(void)
     if (((iir & 0x0E) == 0x04)  ||        // Rx interrupt (RDA)
             ((iir & 0x0E) == 0x0C))  {        // Rx interrupt (CTI)
         while (LPC_USART->LSR & 0x01) {
-            uint32_t free;
+            int32_t free;
             uint8_t data;
             
-            data = LPC_USART->RBR;
+//            data = LPC_USART->RBR;  
             free = circ_buf_count_free(&read_buffer);
-            if (free > RX_OVRF_MSG_SIZE) {
+//            if (free > RX_OVRF_MSG_SIZE) {
+            if (free > 0) {
+                data = LPC_USART->RBR;
                 circ_buf_push(&read_buffer, data);
-            } else if (config_get_overflow_detect()) {
-                if (RX_OVRF_MSG_SIZE == free) {
-                    circ_buf_write(&read_buffer, (uint8_t*)RX_OVRF_MSG, RX_OVRF_MSG_SIZE);
-                } else {
-                    // Drop newest
-                }
             } else {
-                // Drop oldest
-                circ_buf_pop(&read_buffer);
-                circ_buf_push(&read_buffer, data);
+                //buffer full. keep data in FIFO, assert RTS=HIGH.
+                //disable the RX interrupt
+                LPC_USART->IER &= ~(1 << 0);
+                break;                
             }
+//            } else if (config_get_overflow_detect()) {
+//                if (RX_OVRF_MSG_SIZE == free) {
+//                    circ_buf_write(&read_buffer, (uint8_t*)RX_OVRF_MSG, RX_OVRF_MSG_SIZE);
+//                } else {
+//                    // Drop newest
+//                }
+//            } else {
+//                // Drop oldest
+//                circ_buf_pop(&read_buffer);
+//                circ_buf_push(&read_buffer, data);
+//            }
         }
     }
 
@@ -373,7 +375,7 @@ static int32_t reset(void)
 {
     uint32_t mcr;
     // Reset FIFOs
-    LPC_USART->FCR = 0x06;
+    LPC_USART->FCR = 0x87; //0x06;
     baudrate  = 0;
     dll       = 0;
     tx_in_progress = 0;
@@ -387,7 +389,7 @@ static int32_t reset(void)
 
     // Ensure a clean start, no data in either TX or RX FIFO
     while ((LPC_USART->LSR & ((1 << 5) | (1 << 6))) != ((1 << 5) | (1 << 6))) {
-        LPC_USART->FCR = (1 << 1) | (1 << 2);
+        LPC_USART->FCR = 0x87; // (1 << 1) | (1 << 2);
     }
 
     // Restore previous mode (loopback off)

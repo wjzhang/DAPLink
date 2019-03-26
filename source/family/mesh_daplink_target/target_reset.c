@@ -21,11 +21,7 @@
 
 
 uint8_t mesheven_target_set_state(TARGET_RESET_STATE state) {
-	if ((gpio_get_config(PIN_CONFIG_DT01) == PIN_HIGH) && (target_device.flash_algo->hardware_reset_support != 0)) {
-        return swd_set_target_state_hw(state);
-    } else {
-        return swd_set_target_state_sw(state);        
-    }
+    return swd_set_target_state_hw_sw(state); 
 }
 
 
