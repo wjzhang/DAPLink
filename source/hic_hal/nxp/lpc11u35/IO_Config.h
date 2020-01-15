@@ -72,14 +72,14 @@ COMPILER_ASSERT(DAPLINK_HIC_ID == DAPLINK_HIC_ID_LPC11U35);
 #define PIN_RESET_IN_FWRD_BIT           2
 #define PIN_RESET_IN_FWRD               (1 << PIN_RESET_IN_FWRD_BIT)
 #define PIN_RESET_IN_FWRD_IOCON         LPC_IOCON->PIO0_2
-#define PIN_RESET_IN_FWRD_IOCON_INIT    (FUNC_0)
+#define PIN_RESET_IN_FWRD_IOCON_INIT    (FUNC_0 | PULL_UP_ENABLED)
 
 // nRESET OUT Pin                       PIO0_23
 #define PIN_nRESET_PORT                 0
 #define PIN_nRESET_BIT                  23
 #define PIN_nRESET                      (1 << PIN_nRESET_BIT)
 #define PIN_nRESET_IOCON                LPC_IOCON->PIO0_23
-#define PIN_nRESET_IOCON_INIT           (FUNC_0 | OPENDRAIN)
+#define PIN_nRESET_IOCON_INIT           (FUNC_0 | OPENDRAIN | PULL_UP_ENABLED)
 
 // SWCLK/TCK Pin                        PIO0_9
 #define PIN_SWCLK_PORT                  0
