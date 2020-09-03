@@ -47,7 +47,8 @@ error_t target_flash_algorithm_write(const uint8_t *data, uint32_t size);
 error_t target_flash_algorithm_close(void);
 error_t target_flash_basic_configure(const uint8_t *data, uint32_t size);
 error_t target_flash_advance_configure(const uint8_t *data, uint32_t size);
-
+error_t target_flash_do_reset_halt(void);
+error_t target_flash_do_mass_erase(void);
 
 #if defined(DRAG_N_DROP_SUPPORT) || defined(MESHEVEN_FLASH_SUPPORT)
 #include "file_stream.h"
@@ -208,9 +209,20 @@ uint32_t DAP_ProcessVendorCommand(const uint8_t *request, uint8_t *response) {
         num += 1;
         break;
     }
+    case ID_DAP_Vendor18: { 
+        // 
+        *response = target_flash_do_reset_halt();
+        num += 1;
+        break;
+    }
+    case ID_DAP_Vendor19: { 
+        // 
+        *response = target_flash_do_mass_erase();
+        num += 1;
+        break;
+    }    
+    
 #endif
-    case ID_DAP_Vendor18: break;
-    case ID_DAP_Vendor19: break;
     case ID_DAP_Vendor20: break;
     case ID_DAP_Vendor21: break;
     case ID_DAP_Vendor22: break;
