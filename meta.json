@@ -2,9 +2,9 @@
     "project_id"     : "mesh-daplink",
     "project_type"   : "module",
     "caption_en"     : "Mesheven CMSIS-DAP",
-    "caption_zh"     : "",
+    "caption_zh"     : "创享桥CMSIS-DAP调试访问端口",
     "description_en" : "Mesheven DAPLink Implementation",
-    "description_zh" : "",
+    "description_zh" : "创享桥DAPLink实现",
     "items":
     [
         {
