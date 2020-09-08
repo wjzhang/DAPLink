@@ -263,9 +263,11 @@ static uint8_t target_flash_busy(void){
 }
 
 
-error_t target_flash_do_reset_halt(void)
+error_t target_flash_do_halt_under_reset(void)
 {
     if (g_board_info.target_cfg) {
+        // force hardware reset support
+        g_board_info.target_cfg->flash_algo->hardware_reset_support = 1;
         // set to progam state
         if (0 == target_set_state(RESET_PROGRAM)) {
             return ERROR_RESET;
