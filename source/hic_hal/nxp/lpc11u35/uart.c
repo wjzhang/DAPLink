@@ -61,7 +61,7 @@ int32_t uart_initialize(void)
     // DT01 need keep pulldown in RTS/CTS flow control
     LPC_IOCON->PIO0_7  = 0x08; // CTS as GPIO, pulldown
     LPC_IOCON->PIO0_17 = 0x08; // RTS as GPIO, pulldown
-    LPC_GPIO->DIR[0] &= ~((1UL << 7) | (1UL << 17));   
+    LPC_GPIO->DIR[0] &= ~((1UL << 7) | (1UL << 17));
 
     // enable FIFOs (trigger level 1) and clear them
     LPC_USART->FCR = 0x87;
@@ -70,7 +70,7 @@ int32_t uart_initialize(void)
     // reset uart
     reset();
     // enable rx and rx error interrupt
-    LPC_USART->IER = (1 << 0);
+    LPC_USART->IER = (1 << 0) | (1 << 1);
     NVIC_EnableIRQ(UART_IRQn);
     return 1;
 }
@@ -105,11 +105,6 @@ int32_t uart_set_configuration(UART_Configuration *config)
     NVIC_DisableIRQ(UART_IRQn);
     // reset uart
     reset();
-    //clear RTS
-    if (flow_control_enabled)
-	{
-        LPC_USART->MCR = (1 << 1);  
-	} 
 
     baudrate = config->Baudrate;
     // Compute baud rate dividers
@@ -375,7 +370,7 @@ static int32_t reset(void)
 {
     uint32_t mcr;
     // Reset FIFOs
-    LPC_USART->FCR = 0x87; //0x06;
+    LPC_USART->FCR = 0x06; 
     baudrate  = 0;
     dll       = 0;
     tx_in_progress = 0;

@@ -261,4 +261,55 @@ static uint32_t target_flash_erase_sector_size(uint32_t addr)
 static uint8_t target_flash_busy(void){
     return (state == STATE_OPEN);
 }
+
+
+error_t target_flash_do_halt_under_reset(void)
+{
+    if (g_board_info.target_cfg) {
+        // force hardware reset support
+        g_board_info.target_cfg->flash_algo->hardware_reset_support = 1;
+        // set to progam state
+        if (0 == target_set_state(RESET_PROGRAM)) {
+            return ERROR_RESET;
+        }
+        return ERROR_SUCCESS;
+    } else {
+        return ERROR_FAILURE;
+    }       
+}
+
+error_t target_flash_do_mass_erase(void)
+{
+    if (g_board_info.target_cfg) {
+        const program_target_t *const flash = g_board_info.target_cfg->flash_algo;
+               
+        // Download flash programming algorithm to target and initialise.
+        if (0 == swd_write_memory(flash->algo_start, (uint8_t *)flash->algo_blob, flash->algo_size)) {
+            return ERROR_ALGO_DL;
+        }
+        // init flash algorithm
+        if (0 == swd_flash_syscall_exec(&flash->sys_call_s, flash->init, g_board_info.target_cfg->flash_start, 0, 0, 0)) {
+            return ERROR_INIT;
+        }
+        // set flash operation in process
+        state = STATE_OPEN;
+                     
+        // erase chip
+        if (0 == swd_flash_syscall_exec(&flash->sys_call_s, flash->erase_chip, 0, 0, 0, 0)) {
+            return ERROR_ERASE_ALL;
+        }
+        state = STATE_CLOSED;
+        // reset to run
+        if (0 == target_set_state(RESET_RUN)) {
+            return ERROR_RESET;
+        }        
+        
+        return ERROR_SUCCESS;
+    } else {
+        return ERROR_FAILURE;
+    }    
+}
+
+
+
 #endif
