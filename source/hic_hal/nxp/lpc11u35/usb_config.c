@@ -52,8 +52,8 @@
 //   </h>
 #define USBD_POWER                  0
 #define USBD_MAX_PACKET0            8
-#define USBD_DEVDESC_IDVENDOR       0x0D28
-#define USBD_DEVDESC_IDPRODUCT      0x0204
+#define USBD_DEVDESC_IDVENDOR       0x3387  // change to Mesheven VID
+#define USBD_DEVDESC_IDPRODUCT      0x0001  // Mesheven MB0017 PID
 #define USBD_DEVDESC_BCDDEVICE      0x0100
 
 //   <h> Configuration Settings

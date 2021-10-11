@@ -14,5 +14,5 @@
 ; */
 
 ; Mesheven DAPlink version 32 bit : major(31-24) | minor(23-16) | patch(15-0)
-MESHDAPLINK_VERSION   EQU  0x00010003
+MESHDAPLINK_VERSION   EQU  0x00020000
     END
