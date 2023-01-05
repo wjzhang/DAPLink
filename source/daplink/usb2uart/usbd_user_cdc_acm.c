@@ -154,6 +154,7 @@ int32_t USBD_CDC_ACM_PortSetControlLineState(uint16_t ctrl_bmp)
         stopCDCLed = 0;
     } else {
         stopCDCLed = 1;
+        uart_disable_rtscts();
 	}
     return (1);
 }
