@@ -171,7 +171,18 @@ uint32_t DAP_ProcessVendorCommand(const uint8_t *request, uint8_t *response) {
         num += ((write_len + 1) << 16) | 1;
         break;
     }
-    case ID_DAP_Vendor13: {
+#endif
+    
+    case ID_DAP_Vendor13: break;
+    case ID_DAP_Vendor14: break;
+    case ID_DAP_Vendor15: break;
+    case ID_DAP_Vendor16: break;
+    case ID_DAP_Vendor17: break;
+    case ID_DAP_Vendor18: break;
+    case ID_DAP_Vendor19: break;
+    
+#if defined(MESHEVEN_FLASH_SUPPORT)    
+    case ID_DAP_Vendor20: {
         // write flash basic config
         uint32_t write_len = *request;
         request++;
@@ -179,7 +190,7 @@ uint32_t DAP_ProcessVendorCommand(const uint8_t *request, uint8_t *response) {
         num += ((write_len + 1) << 16) | 1;     
         break;
     }
-    case ID_DAP_Vendor14: {
+    case ID_DAP_Vendor21: {
         // write flash advance config
         uint32_t write_len = *request;
         request++;
@@ -187,7 +198,7 @@ uint32_t DAP_ProcessVendorCommand(const uint8_t *request, uint8_t *response) {
         num += ((write_len + 1) << 16) | 1;     
         break;
     }    
-    case ID_DAP_Vendor15: {
+    case ID_DAP_Vendor22: {
         // start write flash algorithm blob info
         uint32_t write_len = *request;
         request++;
@@ -195,7 +206,7 @@ uint32_t DAP_ProcessVendorCommand(const uint8_t *request, uint8_t *response) {
         num += ((write_len + 1) << 16) | 1;        
         break;
     }
-    case ID_DAP_Vendor16: {
+    case ID_DAP_Vendor23: {
         // write flash algorithm blob data
         uint32_t write_len = *request;
         request++;
@@ -203,26 +214,25 @@ uint32_t DAP_ProcessVendorCommand(const uint8_t *request, uint8_t *response) {
         num += ((write_len + 1) << 16) | 1;         
         break;
     }
-    case ID_DAP_Vendor17: {
+    case ID_DAP_Vendor24: {
         // end flash algorithm blob
         *response = target_flash_algorithm_close();
         num += 1;
         break;
     }
-    case ID_DAP_Vendor18: { 
+    case ID_DAP_Vendor25: { 
         // 
         *response = target_flash_do_halt_under_reset();
         num += 1;
         break;
     }
-    case ID_DAP_Vendor19: { 
+    case ID_DAP_Vendor26: { 
         // 
         *response = target_flash_do_mass_erase();
         num += 1;
         break;
-    }    
-    
-#endif
+    }
+#else
     case ID_DAP_Vendor20: break;
     case ID_DAP_Vendor21: break;
     case ID_DAP_Vendor22: break;
@@ -230,6 +240,8 @@ uint32_t DAP_ProcessVendorCommand(const uint8_t *request, uint8_t *response) {
     case ID_DAP_Vendor24: break;
     case ID_DAP_Vendor25: break;
     case ID_DAP_Vendor26: break;
+#endif        
+    
     case ID_DAP_Vendor27:
         {
             uint32_t idaddr = *(uint32_t *)0x00000014; // Vector index 5
@@ -286,6 +298,7 @@ uint32_t DAP_ProcessVendorCommand(const uint8_t *request, uint8_t *response) {
             num += (2 << 16) | 1;
         }        
         break;
+    default: break;
   }
 
   return (num);
