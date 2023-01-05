@@ -370,7 +370,10 @@ static int32_t reset(void)
 {
     uint32_t mcr;
     // Reset FIFOs
-    LPC_USART->FCR = 0x06; 
+    //LPC_USART->FCR = 0x06; 
+    // enable FIFOs (trigger level 1) and clear them
+    LPC_USART->FCR = 0x87;
+    
     baudrate  = 0;
     dll       = 0;
     tx_in_progress = 0;
@@ -380,8 +383,8 @@ static int32_t reset(void)
 
     // Enable loopback mode to drain remaining bytes (even if flow control is on)
     mcr = LPC_USART->MCR;
-    LPC_USART->MCR = mcr | (1 << 4);
-
+    LPC_USART->MCR = mcr | (1 << 4) ;
+       
     // Ensure a clean start, no data in either TX or RX FIFO
     while ((LPC_USART->LSR & ((1 << 5) | (1 << 6))) != ((1 << 5) | (1 << 6))) {
         LPC_USART->FCR = 0x87; // (1 << 1) | (1 << 2);
@@ -395,4 +398,11 @@ static int32_t reset(void)
     }
 
     return 1;
+}
+
+void uart_disable_rtscts(void)
+{
+    // clear RTS/CTS function on Pins
+    LPC_IOCON->PIO0_17 &= ~0x01;     // RTS
+    LPC_IOCON->PIO0_7  &= ~0x01;     // CTS
 }

@@ -86,6 +86,8 @@ extern int32_t uart_read_data(uint8_t *data, int32_t size);
 extern void uart_set_control_line_state(uint16_t ctrl_bmp);
 extern void uart_software_flow_control(void);
 extern void uart_enable_flow_control(bool enabled);
+/* to disable RTS/CTS when UART closed */
+extern void uart_disable_rtscts(void);
 
 #ifdef __cplusplus
 }
