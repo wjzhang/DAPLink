@@ -25,7 +25,7 @@
 #include "macro.h"
 #include "util.h"
 
-void circ_buf_init(circ_buf_t *circ_buf, uint8_t *buffer, uint32_t size)
+void circ_buf_init(circ_buf_t *circ_buf, uint8_t *buffer, int32_t size)
 {
     cortex_int_state_t state;
     state = cortex_int_get_and_disable();
@@ -108,7 +108,7 @@ int32_t circ_buf_count_free(circ_buf_t *circ_buf)
 //    state = cortex_int_get_and_disable();
 
 //    cnt = circ_buf->size - circ_buf_count_used(circ_buf) - 1;
-    cnt = circ_buf->size - circ_buf_count_used(circ_buf);
+    cnt = circ_buf->size + circ_buf->cnt_out - circ_buf->cnt_in;
 
 //    cortex_int_restore(state);
     return cnt;

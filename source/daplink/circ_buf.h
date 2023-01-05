@@ -32,14 +32,14 @@ extern "C" {
 typedef struct {
     volatile int32_t  cnt_in;
     volatile int32_t  cnt_out;    
-    volatile uint32_t head;
-    volatile uint32_t tail;
-    uint32_t size;
+    volatile int32_t  head;
+    volatile int32_t  tail;
+    int32_t size;
     uint8_t *buf;
 } circ_buf_t;
 
 // Initialize or reinitialize a circular buffer
-void circ_buf_init(circ_buf_t *circ_buf, uint8_t *buffer, uint32_t size);
+void circ_buf_init(circ_buf_t *circ_buf, uint8_t *buffer, int32_t size);
 
 // Push a byte into the circular buffer
 void circ_buf_push(circ_buf_t *circ_buf, uint8_t data);
