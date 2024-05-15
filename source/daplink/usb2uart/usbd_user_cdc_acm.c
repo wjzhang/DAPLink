@@ -174,7 +174,7 @@ void cdc_process_event()
         len_data = uart_read_data(data, len_data);
     }
 
-    if (len_data) {
+    if ((len_data) && (USBD_Configuration)) {
         if (USBD_CDC_ACM_DataSend(data , len_data)) {
             main_blink_cdc_led(MAIN_LED_FLASH);
         }
